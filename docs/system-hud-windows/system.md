@@ -279,7 +279,7 @@ Bản Ubuntu nằm cùng repo (`system-hud/`). Khi có commit mới, xem `git lo
 
 ## Memory files & external resources
 
-- Code: `system-hud-windows/` (repo `github.com/pushsale/ubuntu-assistant`)
+- Code: `system-hud-windows/` (repo `github.com/pushsale/ubuntu-setup`)
 - Bản Ubuntu: `system-hud/`, tài liệu [../system-hud/system.md](../system-hud/system.md)
 - LibreHardwareMonitor (nguồn nhiệt độ tuỳ chọn): `https://github.com/LibreHardwareMonitor/LibreHardwareMonitor`
 - Memory: memory Claude Code của project trên máy phát triển (`%USERPROFILE%\.claude\projects\<thư-mục-project>\memory\`), nằm ngoài repo

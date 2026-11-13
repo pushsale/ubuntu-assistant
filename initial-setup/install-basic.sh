@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Cài một lượt mọi thứ đơn giản trong danh sách Ubuntu Setup (không cần hỏi gì thêm).
+# Cài một lượt mọi thứ đơn giản trong danh sách Initial Setup (không cần hỏi gì thêm).
 # Chỉ hỏi mật khẩu sudo một lần ở đầu. Chạy lại nhiều lần được: mục đã có thì bỏ qua.
 #
 #   ./install-basic.sh           kiểm tra và cài
 #   ./install-basic.sh --check   chỉ kiểm tra, không cài gì, không cần sudo
 #
 # Những thứ phức tạp (driver NVIDIA, Remote Shield, Remote Login, LibreOffice khi cần) KHÔNG nằm ở đây:
-# Claude xử lý theo ubuntu-setup/packages.md.
-# Log: ~/.cache/ubuntu-setup/install-basic.log. Kết thúc in bảng tổng kết giữa hai dòng "=== TỔNG KẾT ===".
+# Claude xử lý theo initial-setup/packages.md.
+# Log: ~/.cache/initial-setup/install-basic.log. Kết thúc in bảng tổng kết giữa hai dòng "=== TỔNG KẾT ===".
 set -uo pipefail
 
 CHECK_ONLY=0
@@ -16,7 +16,7 @@ case "${1:-}" in ""|--check) ;; -h|--help) sed -n '2,10p' "$0" | sed 's/^# \{0,1
 
 [ "$(id -u)" -ne 0 ] || { echo "Chạy bằng user thường (không dùng sudo); script tự hỏi mật khẩu khi cần."; exit 2; }
 
-LOG_DIR="$HOME/.cache/ubuntu-setup"
+LOG_DIR="$HOME/.cache/initial-setup"
 LOG="$LOG_DIR/install-basic.log"
 mkdir -p "$LOG_DIR"
 exec > >(tee -a "$LOG") 2>&1
@@ -163,7 +163,7 @@ done
 printf '\n=== TỔNG KẾT ===\n'
 { echo "MỤC|KẾT QUẢ|GHI CHÚ"; printf '%s\n' "${RESULTS[@]}"; } | column -t -s'|'
 printf '=== TỔNG KẾT ===\n'
-echo "Còn lại (Claude xử lý theo ubuntu-setup/packages.md): driver NVIDIA nếu cần, Remote Shield + Desktop Sharing + Remote Control, Remote Login, LibreOffice nếu cần."
+echo "Còn lại (Claude xử lý theo initial-setup/packages.md): driver NVIDIA nếu cần, Remote Shield + Desktop Sharing + Remote Control, Remote Login, LibreOffice nếu cần."
 echo "Log: $LOG"
 [ "$CHECK_ONLY" = 1 ] || echo "Đăng xuất rồi đăng nhập lại để bộ gõ tiếng Việt hoạt động đầy đủ."
 exit "$FAILED"

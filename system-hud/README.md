@@ -12,8 +12,8 @@ Bảng theo dõi CPU, RAM, GPU, ổ đĩa, mạng, nhiệt độ vẽ thẳng l�
 ## Cài đặt
 
 ```bash
-git clone https://github.com/pushsale/ubuntu-assistant.git   # bỏ qua nếu đã clone
-cd ubuntu-assistant/system-hud
+git clone https://github.com/pushsale/ubuntu-setup.git   # bỏ qua nếu đã clone
+cd ubuntu-setup/system-hud
 ./install.sh
 ```
 

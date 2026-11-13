@@ -15,8 +15,8 @@ Bảng theo dõi CPU, RAM, GPU, ổ đĩa, mạng vẽ thẳng lên desktop Wind
 Cần [.NET SDK](https://dotnet.microsoft.com/download) (bản 5 trở lên). Máy chưa có .NET Framework 4.8 Developer Pack thì SDK tự tải reference assemblies, nên cần mạng.
 
 ```bat
-git clone https://github.com/pushsale/ubuntu-assistant.git
-cd ubuntu-assistant\system-hud-windows
+git clone https://github.com/pushsale/ubuntu-setup.git
+cd ubuntu-setup\system-hud-windows
 build.cmd
 ```
 

@@ -1,6 +1,6 @@
-# Ubuntu Setup — hướng dẫn cho Claude
+# Initial Setup — hướng dẫn cho Claude
 
-Thư mục này dùng khi chuyển sang một máy Ubuntu mới (hoặc cài lại máy). Người dùng đã tự cài Claude theo [README.md gốc](../README.md), rồi giao việc kiểu "cài đặt máy theo ubuntu-setup". Claude đọc file này rồi làm theo.
+Thư mục này dùng khi chuyển sang một máy Ubuntu mới (hoặc cài lại máy). Người dùng đã tự cài Claude theo [README.md gốc](../README.md), rồi giao việc kiểu "cài đặt máy theo initial-setup". Claude đọc file này rồi làm theo.
 
 Hai phần việc, chi tiết ở [packages.md](packages.md):
 
@@ -9,11 +9,11 @@ Hai phần việc, chi tiết ở [packages.md](packages.md):
 
 ## Quy trình
 
-1. **Repo:** đang làm việc trong bản clone của repo (thường là `~/ubuntu-assistant`). Chưa có thì `git clone https://github.com/pushsale/ubuntu-assistant.git ~/ubuntu-assistant`; có rồi thì `git -C ~/ubuntu-assistant pull --ff-only`.
+1. **Repo:** đang làm việc trong bản clone của repo (thường là `~/ubuntu-setup`). Chưa có thì `git clone https://github.com/pushsale/ubuntu-setup.git ~/ubuntu-setup`; có rồi thì `git -C ~/ubuntu-setup pull --ff-only`.
 2. **Đọc máy:** `lsb_release -ds`, `gnome-shell --version`, `echo $XDG_SESSION_TYPE`, card đồ hoạ (`lspci | grep -iE 'vga|3d'`), kiến trúc (`uname -m`).
-3. **Kiểm tra Phần A:** chạy `ubuntu-setup/install-basic.sh --check` (không cần sudo, không thay đổi máy). Đọc bảng giữa hai dòng `=== TỔNG KẾT ===`.
-4. **Chạy Phần A:** còn mục `CHƯA CÓ` thì chạy `ubuntu-setup/install-basic.sh` (không có `--check`, **không** thêm `sudo` phía trước) **trong terminal của người dùng** để họ nhập mật khẩu một lần. Không cần hỏi duyệt riêng: người dùng giao việc cài máy là đã đồng ý Phần A. Báo trước một câu: "Script sẽ hỏi mật khẩu đăng nhập Ubuntu một lần."
-   - Chờ script chạy xong (có thể vài phút do tải Chrome, snap). Đọc tổng kết trong terminal hoặc ở cuối `~/.cache/ubuntu-setup/install-basic.log`.
+3. **Kiểm tra Phần A:** chạy `initial-setup/install-basic.sh --check` (không cần sudo, không thay đổi máy). Đọc bảng giữa hai dòng `=== TỔNG KẾT ===`.
+4. **Chạy Phần A:** còn mục `CHƯA CÓ` thì chạy `initial-setup/install-basic.sh` (không có `--check`, **không** thêm `sudo` phía trước) **trong terminal của người dùng** để họ nhập mật khẩu một lần. Không cần hỏi duyệt riêng: người dùng giao việc cài máy là đã đồng ý Phần A. Báo trước một câu: "Script sẽ hỏi mật khẩu đăng nhập Ubuntu một lần."
+   - Chờ script chạy xong (có thể vài phút do tải Chrome, snap). Đọc tổng kết trong terminal hoặc ở cuối `~/.cache/initial-setup/install-basic.log`.
    - `mang` = `LỖI`: dừng toàn bộ, chẩn đoán (`ip route`, `resolvectl status`, `nmcli`) và báo người dùng; không tự đổi cấu hình mạng.
    - Mục `LỖI` khác: đọc log tìm nguyên nhân, sửa nếu là lỗi tạm (mạng chập chờn, apt đang khoá) bằng cách chạy lại script; lỗi khác thì ghi vào báo cáo.
    - Mục `CẦN XỬ LÝ`: làm theo cột "Ghi chú" của mục đó trong Phần A.
@@ -52,4 +52,4 @@ Bỏ qua khối "Mẫu" và mục có trạng thái `bỏ`.
 ## Lưu ý
 
 - Repo này **public**: không ghi mật khẩu, token, license key, IP nội bộ, tên máy hay đường dẫn cá nhân vào bất kỳ file nào ở đây.
-- Tài liệu kỹ thuật: [docs/ubuntu-setup/](../docs/ubuntu-setup/overview.md).
+- Tài liệu kỹ thuật: [docs/initial-setup/](../docs/initial-setup/overview.md).

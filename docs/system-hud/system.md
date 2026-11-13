@@ -282,5 +282,5 @@ Trạng thái runtime (2026-11-13):
 - Memory: memory Claude Code của project (nằm ngoài repo, trên máy phát triển: `~/.claude/projects/<thư-mục-project>/memory/`)
 - Mã nguồn: `system-hud/` trong repo
 - Extension đã cài: `~/.local/share/gnome-shell/extensions/system-hud@ubuntu-assistant/`
-- Repo: `github.com/pushsale/ubuntu-assistant` (public)
+- Repo: `github.com/pushsale/ubuntu-setup` (public)
 - Tham khảo: GJS guide (gjs.guide), Cairo/Pango API, `man nvidia-smi`, `Documentation/hwmon` của kernel

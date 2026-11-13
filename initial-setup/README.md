@@ -1,4 +1,4 @@
-# Ubuntu Setup — cài máy Ubuntu mới
+# Initial Setup — cài máy Ubuntu mới
 
 Cài đủ công cụ quen dùng khi chuyển sang Ubuntu: phím tắt kiểu Windows, gõ tiếng Việt, Chrome, Remote Shield + Remote Desktop, OnlyOffice, Remmina, RustDesk, Notepad Next, DBeaver. Danh sách đầy đủ: [packages.md](packages.md).
 
@@ -8,15 +8,15 @@ Chưa cài Claude: làm theo [README gốc](../README.md) trước.
 
 Người dùng gửi link trang này cho bạn để tiếp tục cài máy. Làm như sau:
 
-1. Repo cần có ở `~/ubuntu-assistant`: chưa có thì `git clone https://github.com/pushsale/ubuntu-assistant.git ~/ubuntu-assistant`, có rồi thì `git -C ~/ubuntu-assistant pull --ff-only`.
-2. Đọc `~/ubuntu-assistant/ubuntu-setup/CLAUDE.md` và làm đúng quy trình trong đó.
+1. Repo cần có ở `~/ubuntu-setup`: chưa có thì `git clone https://github.com/pushsale/ubuntu-setup.git ~/ubuntu-setup`, có rồi thì `git -C ~/ubuntu-setup pull --ff-only`.
+2. Đọc `~/ubuntu-setup/initial-setup/CLAUDE.md` và làm đúng quy trình trong đó.
 
 ## Dành cho người dùng
 
-Cách nhanh nhất: trong Claude (tab **Code**, thư mục `~/ubuntu-assistant`), gõ:
+Cách nhanh nhất: trong Claude (tab **Code**, thư mục `~/ubuntu-setup`), gõ:
 
 ```text
-Đọc ubuntu-setup/CLAUDE.md và cài đặt máy theo hướng dẫn trong đó
+Đọc initial-setup/CLAUDE.md và cài đặt máy theo hướng dẫn trong đó
 ```
 
 Claude sẽ:
@@ -28,14 +28,14 @@ Claude sẽ:
 Tự chạy phần cài đơn giản không cần Claude:
 
 ```bash
-cd ~/ubuntu-assistant/ubuntu-setup && ./install-basic.sh
+cd ~/ubuntu-setup/initial-setup && ./install-basic.sh
 ```
 
-Chỉ kiểm tra máy đã có gì, không cài gì: `./install-basic.sh --check`. Script chạy lại bao nhiêu lần cũng được, mục đã có thì bỏ qua. Log: `~/.cache/ubuntu-setup/install-basic.log`.
+Chỉ kiểm tra máy đã có gì, không cài gì: `./install-basic.sh --check`. Script chạy lại bao nhiêu lần cũng được, mục đã có thì bỏ qua. Log: `~/.cache/initial-setup/install-basic.log`.
 
 ## Sửa danh sách cần cài
 
 - Thứ chỉ cần một lệnh cài, không hỏi gì: thêm vào `install-basic.sh` và bảng Phần A của [packages.md](packages.md).
 - Thứ cần hỏi, cần tài khoản, tuỳ máy: thêm dòng vào Phần B của [packages.md](packages.md).
 
-Hoặc nói với Claude "thêm X vào ubuntu-setup". Không ghi mật khẩu, token, license key hay thông tin cá nhân vào đó (repo public).
+Hoặc nói với Claude "thêm X vào initial-setup". Không ghi mật khẩu, token, license key hay thông tin cá nhân vào đó (repo public).

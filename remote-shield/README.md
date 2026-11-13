@@ -4,7 +4,7 @@ Remote desktop kiểu Windows cho Ubuntu (GNOME 50, Wayland). Khi có người k
 
 > **In English.** A GNOME Shell extension that makes GNOME's built-in RDP behave like Windows Remote Desktop: while someone is connected, the physical screen shows a lock-screen look-alike and local keyboard/mouse are blocked; any local key press or click ends the remote session and shows the password prompt.
 
-Cài cùng các công cụ khác khi chuyển sang máy Ubuntu mới: xem [ubuntu-setup](../ubuntu-setup/README.md).
+Cài cùng các công cụ khác khi chuyển sang máy Ubuntu mới: xem [initial-setup](../initial-setup/README.md).
 
 ## Yêu cầu
 
@@ -21,12 +21,12 @@ GNOME bản khác 50 thì script từ chối cài; có thể thử với `--forc
 
 ```bash
 sudo apt install git gcc gnome-remote-desktop
-git clone https://github.com/pushsale/ubuntu-assistant.git
-cd ubuntu-assistant/remote-shield
+git clone https://github.com/pushsale/ubuntu-setup.git
+cd ubuntu-setup/remote-shield
 ./install.sh --rdp --remote-login
 ```
 
-Không có git: tải ZIP ở nút **Code → Download ZIP** trên GitHub, giải nén, rồi vào thư mục `ubuntu-assistant-main/remote-shield`.
+Không có git: tải ZIP ở nút **Code → Download ZIP** trên GitHub, giải nén, rồi vào thư mục `ubuntu-setup-main/remote-shield`.
 
 Các tuỳ chọn:
 
@@ -83,7 +83,7 @@ Remote Shield nạp một thư viện nhỏ vào tiến trình `gnome-shell` (LD
 ## Gỡ cài đặt
 
 ```bash
-cd ubuntu-assistant/remote-shield   # thư mục đã clone
+cd ubuntu-setup/remote-shield   # thư mục đã clone
 ./uninstall.sh
 ```
 
