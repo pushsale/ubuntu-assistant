@@ -231,6 +231,7 @@ Thiết lập hệ thống liên quan:
 | 2026-11-13 | Bỏ qua phiên headless (Remote Login bị văng ra sau khi gõ mật khẩu) |
 | 2026-11-13 | #16: `install.sh` hợp nhất (kiểm tra máy, `--rdp`, `--remote-login`, `--force`); drop-in chuyển sang template `org.gnome.Shell@.service.d`; `package.sh` tạo gói tar.gz |
 | 2026-11-13 | #20: màn che giống hệt màn khóa (hình nền mờ, giờ chạy, ngày, gợi ý); bấm tại máy → ngắt remote, khóa, hiện ô mật khẩu; shim vẽ ảnh toàn màn theo kích thước và vẽ lại khi `shield.gen` đổi |
+| 2026-11-13 | #24: sửa ngắt remote từ tại chỗ bị kéo rèm 2 lần (gây đơ bàn phím / bộ gõ sau khi mở khóa) |
 | 2026-11-13 | #19: tích hợp remote khi màn hình khóa (`allowWhenLocked`, mặc định bật); `install.sh` gỡ extension Allow Locked Remote Desktop (đã gỡ trên máy này) |
 
 ## 9. Cấu trúc thư mục
@@ -361,6 +362,7 @@ Trạng thái runtime (2026-11-13):
 | Chữ trên ảnh màn che có viền màu (cam/xanh) khi thu nhỏ | Cairo khử răng cưa theo subpixel trên surface RGB24 | Vẽ trên surface ARGB32 (khử răng cưa thang xám như shell); shim chép được cả ARGB32 lẫn RGB24 |
 | Đồng hồ trên màn che đứng yên | Shim dựng framebuffer một lần và trước đây `munmap` ngay | Giữ map; extension vẽ lại đầu mỗi phút + đổi `shield.gen`; shim kiểm tra mỗi 100 ms trong lúc giao khung và vẽ lại tại chỗ; extension `queue_redraw` 2 lần để chắc có lần giao khung |
 | Dấu hai chấm giờ trông khác `:` | `GnomeDesktop.WallClock` dùng ký tự U+2236 (∶) như màn khóa thật | Đúng ý đồ; không thay bằng `:` |
+| Bấm tại máy để ngắt remote: máy khóa / mở rèm 2 lần, sau khi mở khóa gõ mãi không ra chữ (log `Set global engine failed: Operation was cancelled`) | Một phiên RDP có 2 handle dừng lệch nhau; handle dừng trước làm `_sync` thấy còn 1 handle và kéo rèm lại, rồi lại mở rèm + khóa; việc chuyển bộ gõ IBus (Bamboo) của màn khóa bị huỷ giữa chừng | `_stopRemote` bỏ theo dõi mọi handle trước khi dừng; `_disengage` không gọi `lock()` khi `screenShield.locked` đã đúng (#24) |
 | Log có `JS ERROR … grabbedsOldRect` | Lỗi của extension tiling-assistant | Không liên quan, bỏ qua |
 | Máy tự khóa sau khi ngắt, lần sau không remote vào được (máy mới) | GNOME chặn remote khi khóa; trước đây phải cài thêm extension Allow Locked Remote Desktop | `allowWhenLocked` (#19) |
 | Log `meta_dbus_session_manager_uninhibit: assertion 'priv->inhibit_count > 0' failed` | Extension Allow Locked Remote Desktop bỏ qua lệnh chặn nhưng vẫn để lệnh mở chặn chạy khi mở khóa | Remote Shield bỏ qua cả cặp; nếu còn thấy log này, kiểm tra xem còn extension nào khác đè `inhibit_remote_access` |

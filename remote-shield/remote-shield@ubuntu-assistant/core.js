@@ -365,13 +365,25 @@ export class ShieldCore {
     }
 
     _stopRemote() {
-        for (const h of [...(this._handles?.keys() ?? [])]) {
+        // Chủ động dừng: bỏ theo dõi mọi handle trước. Một phiên RDP có 2 handle (ScreenCast + RemoteDesktop)
+        // dừng không cùng lúc; nếu vẫn nghe 'stopped' thì handle dừng trước làm _sync thấy còn 1 handle
+        // và kéo rèm lại giữa chừng -> khóa / mở rèm 2 lần, làm hỏng việc chuyển bộ gõ (IBus) khi mở khóa.
+        const handles = [...(this._handles ?? new Map())];
+        this._handles?.clear();
+        for (const [h, id] of handles) {
+            try {
+                h.disconnect(id);
+            } catch (e) {
+                // handle đã huỷ
+            }
             try {
                 h.stop();
             } catch (e) {
                 log(`không dừng được phiên remote: ${e.message}`);
             }
         }
+        if (handles.length)
+            log(`đã dừng ${handles.length} handle remote`);
     }
 
     // ---------- kéo / mở rèm ----------
@@ -472,7 +484,7 @@ export class ShieldCore {
             this._filterId = 0;
         }
         this._restoreWindows();
-        if (lock && !Main.sessionMode.isLocked)
+        if (lock && !Main.sessionMode.isLocked && !Main.screenShield?.locked)
             Main.screenShield?.lock(false);
         // Khóa trước, trả màn hình sau: màn hình thật không lộ desktop dù chỉ một khung
         this._unflagId = this._timeout(lock ? 800 : 0, () => {

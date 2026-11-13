@@ -272,6 +272,8 @@ Trạng thái runtime (2026-11-13):
 | Đổi UUID: HUD mới không hiện ngay | Wayland không nạp extension mới khi shell đang chạy | Đăng xuất / đăng nhập; bản cũ vẫn chạy tới lúc đó |
 | Xoá thư mục của extension đang chạy: extension biến mất, log `ImportError … core.js: No such file` | Tắt một extension thì GNOME tắt rồi bật lại các extension đứng sau nó trong danh sách; lúc bật lại, extension đã mất file nên nạp `core.js` thất bại (gặp khi đổi tên HUD rồi gỡ Allow Locked Remote Desktop) | Đổi tên / gỡ extension: bỏ khỏi `enabled-extensions` rồi mới xoá thư mục, sau đó đăng xuất và đăng nhập lại để nạp sạch; không giữ bản tạm |
 | Số liệu hiện dạng `726.3962025246043 MHz` | Animator nội suy mọi số; chỗ hiển thị không làm tròn (lộ rõ khi `animMs` dài) | Làm tròn khi định dạng (`Math.round` cho Clock, Fan). Thêm số liệu mới: luôn định dạng bằng `toFixed`/`Math.round`/`fmtBytes` |
+| Đổi `fps` trong config không có tác dụng | Khi `animMs >= intervalMs` timer khung hình chạy liên tục, không bao giờ tạo lại với fps mới | Theo dõi config: fps đổi thì huỷ và tạo lại timer khung hình (#24) |
+| `nvidia-smi` báo GPU 30–37% khi HUD chạy hiệu ứng liên tục | % tải tính theo xung hiện tại; GPU đang ở xung thấp (≈405 MHz) nên việc nhỏ cũng hiện % cao | Xem công suất: bật/tắt HUD chỉ chênh ≈0,4 W (8,3 so với 7,9 W). Chi phí thật là CPU gnome-shell (đo 2026-11-13: tắt HUD 17%, hiệu ứng 0,9 s 25%, liên tục 30 fps 38%, 15 fps 29%, 10 fps 25%) |
 | Gauge orbital rối mắt | Quá nhiều chi tiết trang trí | Đã bỏ thước vạch và cung xoay (2026-11-12); không thêm lại khi chưa hỏi |
 | Log có `JS ERROR … grabbedsOldRect` | Lỗi của extension tiling-assistant | Không liên quan HUD |
 

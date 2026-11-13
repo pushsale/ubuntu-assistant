@@ -97,12 +97,19 @@ export class HudCore {
                 if (type !== Gio.FileMonitorEvent.CHANGES_DONE_HINT && type !== Gio.FileMonitorEvent.CREATED)
                     return;
                 const oldInterval = this._cfg.intervalMs;
+                const oldFps = this._cfg.fps;
                 this._cfg = loadConfig(this.path);
                 if (!THEMES[this._cfg.theme])
                     this._cfg.theme = DEFAULTS.theme;
                 this._animator.duration = this._cfg.animMs;
                 if (this._cfg.intervalMs !== oldInterval)
                     this._startTimer();
+                // timer khung hình chạy liên tục khi animMs >= intervalMs: đổi fps phải tạo lại timer
+                if (this._cfg.fps !== oldFps && this._frameId) {
+                    GLib.source_remove(this._frameId);
+                    this._frameId = 0;
+                    this._onSample();
+                }
                 this._relayout();
             });
         } catch (e) {
