@@ -916,7 +916,7 @@ function makeOrbital(c, heatFn, opt = {}) {
                 cr.arc(cx, cy, ri, a0, a0 + TAU * Math.min(1, o.temp / 100));
                 cr.stroke();
             }
-            const size = o.small ? 30 : 46;
+            const size = o.small ? Math.round(r * 0.66) : 46; // chữ theo cỡ vòng (r 70 -> 46)
             const t = text(cr, `${Math.round(pct)}`, cx - 5, cy - 2, {font: `${F.thin} ${size}px`, color: c.main, align: 'center', valign: 'middle'});
             text(cr, '%', t.x + t.w + 1, cy - size * 0.3, {font: `${F.light} ${size * 0.32}px`, color: c.dim});
             L(cr, o.label, cx, cy + size * 0.42, {align: 'center', size: 9});
@@ -1351,7 +1351,8 @@ function drawGpu(cr, T, s, x, y, w) {
         T.label(cr, x, top + 10, 'NO TELEMETRY');
         return;
     }
-    T.gauge(cr, x + 64, top + 64, 44, g.util, {temp: g.temp, label: 'core', tick: s.tick, small: true});
+    // vòng to gần hết chiều cao khối (176 - 32 tiêu đề), cột số liệu vẫn bắt đầu ở x + 150
+    T.gauge(cr, x + 68, top + 68, 58, g.util, {temp: g.temp, label: 'core', tick: s.tick, small: true});
     const rx = x + 150, rw = w - 150;
     let ry = top + 2;
     T.stat(cr, rx, ry, rw, 'TEMP', fmtTemp(g.temp), T.tempColor(g.temp));

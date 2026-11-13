@@ -153,6 +153,7 @@ Thiết lập ngoài cũng ảnh hưởng tới HUD:
   - Network 178 px;
   - footer 22 px: uptime.
 - **Màu theo mức tải/nhiệt**: `heat()`/`heatLight()` [hud.js:167](../../system-hud/system-hud@ubuntu-assistant/hud.js).
+- **Ngày 2026-11-13** (#23): vòng đo GPU phóng to (r 44 → 58, tâm `x+68, top+68`), cỡ số trong vòng nhỏ tính theo bán kính (`r × 0.66`).
 - **Ngày 2026-11-12**, theo yêu cầu "đỡ rối", đã bỏ khỏi `gauge()` của orbital:
   - thước 12 vạch mỗi 30°;
   - 2 cung trang trí xoay chậm bên ngoài.
