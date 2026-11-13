@@ -15,6 +15,7 @@ mkdir -p "$OUT/$UUID" "$OUT/shim/build"
 
 install -m 0755 install.sh uninstall.sh "$OUT"/
 install -m 0644 packaging/README.txt "$OUT"/README.txt
+install -m 0644 ../LICENSE "$OUT"/LICENSE
 install -m 0644 "$UUID"/{metadata.json,extension.js,core.js,overlay.js,config.json} "$OUT/$UUID"/
 install -m 0644 shim/shield-shim.c "$OUT/shim"/
 install -m 0755 shim/build.sh shim/shieldctl "$OUT/shim"/

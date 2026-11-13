@@ -164,3 +164,7 @@ Mở issue trên GitHub, kèm:
 - với Remote Shield: kết quả `shieldctl status`, `shieldctl log 50` và `journalctl --user -b | grep remote-shield`.
 
 Không dán mật khẩu RDP, địa chỉ IP công khai hay thông tin tài khoản vào issue.
+
+## Giấy phép
+
+[MIT](LICENSE): dùng, sửa, phân phối tự do, kể cả cho mục đích thương mại, miễn giữ lại thông báo bản quyền. Phần mềm cung cấp nguyên trạng, không bảo hành.
