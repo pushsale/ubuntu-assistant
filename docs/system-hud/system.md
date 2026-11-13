@@ -51,9 +51,9 @@ extension.js ── import('./core.js?v=<Date.now()>') ──► HudCore (core.j
 
 | Bước | Code |
 |---|---|
-| Nạp core.js kèm mã phiên bản; core.js nạp tiếp sensors/hud/animator cùng mã đó | [extension.js](../../system-hud/system-hud@ubuntu-assistant/extension.js), [core.js:10-13](../../system-hud/system-hud@ubuntu-assistant/core.js) |
-| Mặc định cấu hình, đọc config.json | `DEFAULTS` [core.js:15](../../system-hud/system-hud@ubuntu-assistant/core.js), `loadConfig` [core.js:26](../../system-hud/system-hud@ubuntu-assistant/core.js) |
-| Né dock trái tự ẩn (dash-to-dock không trừ vào work area) | `dockMargin` [core.js:38](../../system-hud/system-hud@ubuntu-assistant/core.js) |
+| Nạp core.js kèm mã phiên bản; core.js nạp tiếp sensors/hud/animator cùng mã đó | [extension.js](../../system-hud/system-hud@ubuntu-assistant/extension.js), [core.js:11-14](../../system-hud/system-hud@ubuntu-assistant/core.js) |
+| Mặc định cấu hình, đọc config.json | `DEFAULTS` [core.js:16](../../system-hud/system-hud@ubuntu-assistant/core.js), `loadConfig` [core.js:27](../../system-hud/system-hud@ubuntu-assistant/core.js) |
+| Né dock trái tự ẩn (dash-to-dock không trừ vào work area) | `dockMargin` [core.js:39](../../system-hud/system-hud@ubuntu-assistant/core.js) |
 | Gắn vào lớp hình nền, theo dõi màn hình và config | `enable` [core.js:59](../../system-hud/system-hud@ubuntu-assistant/core.js) |
 | Hẹn giờ lấy mẫu | `_startTimer` [core.js:117](../../system-hud/system-hud@ubuntu-assistant/core.js) |
 | Mẫu mới → chạy hiệu ứng | `_onSample` [core.js:129](../../system-hud/system-hud@ubuntu-assistant/core.js) |
@@ -64,7 +64,7 @@ extension.js ── import('./core.js?v=<Date.now()>') ──► HudCore (core.j
 | CPU / RAM / disk / net | `_readCpu` [sensors.js:172](../../system-hud/system-hud@ubuntu-assistant/sensors.js), `_readMem` 211, `_readDiskUsage` 240, `_readDisk` 255, `_readNet` 288 |
 | NVIDIA: luồng `nvidia-smi` | `_startNvidia` [sensors.js:334](../../system-hud/system-hud@ubuntu-assistant/sensors.js), `_parseNvidia` 372 |
 | Nội suy | `Animator` [animator.js:30](../../system-hud/system-hud@ubuntu-assistant/animator.js) |
-| Vẽ | `drawHud` [hud.js:1414](../../system-hud/system-hud@ubuntu-assistant/hud.js), `SECTIONS` [hud.js:1399](../../system-hud/system-hud@ubuntu-assistant/hud.js) |
+| Vẽ | `drawHud` [hud.js:1415](../../system-hud/system-hud@ubuntu-assistant/hud.js), `SECTIONS` [hud.js:1400](../../system-hud/system-hud@ubuntu-assistant/hud.js) |
 | Theme | tactical [hud.js:235](../../system-hud/system-hud@ubuntu-assistant/hud.js), terminal 536, `makeOrbital` 796 → orbital 1044 / orbitalLight 1051, card 1058, `THEMES` 1311 |
 
 Chi tiết từng bước:
@@ -168,6 +168,7 @@ Thiết lập ngoài cũng ảnh hưởng tới HUD:
 | 2026-11-12 | Animator (chuyển mượt, đồ thị trượt), cache nền panel, `orbitalLight`, theo dõi config.json, chọn màn hình/mép |
 | 2026-11-12 | File khởi động mỏng; install.sh chờ INACTIVE/ACTIVE (sửa lỗi nằm ở INACTIVE sau khi cài lại) |
 | 2026-11-12 | Gauge orbital bỏ thước vạch và 2 cung xoay ngoài |
+| 2026-11-13 | #21: thử `animMs` = `intervalMs` = 3000 (hiệu ứng chạy suốt chu kỳ). #22: làm tròn GPU Clock/Fan (số nội suy hiện 10 chữ số thập phân). #23: vòng đo GPU r 44 → 58 |
 | 2026-11-13 | #18: đổi tên Sci-Fi HUD → System HUD (UUID mới). Trên máy này đã gỡ hẳn UUID cũ và đăng nhập lại để nạp sạch; `install.sh` không giữ code chuyển đổi (bản cũ chưa từng được cài ở máy khác) |
 
 ## 9. Cấu trúc thư mục

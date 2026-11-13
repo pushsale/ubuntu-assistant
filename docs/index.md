@@ -6,7 +6,7 @@ Bộ công cụ tự viết để tuỳ biến và vận hành máy Ubuntu 26.04
 
 | Thư mục | Phạm vi | Trạng thái | Cập nhật |
 |---|---|---|---|
-| [remote-shield/](remote-shield/overview.md) | Che màn hình thật khi có người remote RDP; người remote vẫn thấy và điều khiển desktop | đang chạy | 2026-11-13 |
+| [remote-shield/](remote-shield/overview.md) | Khi có người remote RDP, màn hình thật trông như đang khóa; người remote vẫn thấy và điều khiển desktop; bấm tại máy để lấy lại máy | đang chạy | 2026-11-13 |
 | [system-hud/](system-hud/overview.md) | Bảng theo dõi CPU/RAM/GPU/ổ đĩa/mạng/nhiệt độ vẽ trên desktop, dưới mọi cửa sổ (tên cũ: Sci-Fi HUD) | đang chạy | 2026-11-13 |
 
 Mỗi thư mục có `overview.md` (cho người không đọc code) và `system.md` (chi tiết kỹ thuật).

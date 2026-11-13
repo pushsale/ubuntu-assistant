@@ -56,7 +56,8 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
 | 2026-11-12 | Hiệu ứng chuyển số liệu mượt; theme orbitalLight; cấu hình đổi ngay không cần đăng nhập lại |
 | 2026-11-12 | File khởi động mỏng (cập nhật code không cần đăng xuất); sửa lỗi cài lại bị nằm ở trạng thái tắt |
 | 2026-11-12 | Theme orbital: bỏ thước chia vạch và 2 cung xoay bên ngoài vòng đo cho đỡ rối |
-| 2026-11-13 | Đổi tên thành System HUD (UUID `system-hud@ubuntu-assistant`), tự chuyển cấu hình từ tên cũ |
+| 2026-11-13 | Đổi tên thành System HUD (UUID `system-hud@ubuntu-assistant`) |
+| 2026-11-13 | Hiệu ứng chuyển số liệu kéo dài bằng cả chu kỳ 3 giây (chạy liên tục); số GPU Clock/Fan làm tròn thành số nguyên; vòng đo GPU phóng to |
 
 ## Tech stack
 
@@ -66,9 +67,9 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
 
 ## Quy mô hiện tại
 
-- Khoảng 2.400 dòng: hud.js 1.462 dòng (5 theme), sensors.js 393, core.js 223, các file khác khoảng 330.
+- Khoảng 2.400 dòng: hud.js 1.463 dòng (5 theme), sensors.js 393, core.js 223, các file khác khoảng 330.
 - 5 theme, 6 khối thông tin (header, CPU, RAM, GPU, Disk, Network) + footer.
-- Đang chạy trên 1 máy: theme orbital, màn phụ (HDMI-3), mép trái, rộng 25%, cập nhật 3 giây/lần.
+- Đang chạy trên 1 máy: theme orbital, màn phụ (HDMI-3), mép trái, rộng 25%, cập nhật 3 giây/lần, hiệu ứng 3 giây ở 30 khung/giây (gnome-shell tốn thêm khoảng 16% một nhân CPU so với hiệu ứng 0,9 giây).
 
 ## Đặc điểm nổi bật
 
@@ -79,7 +80,7 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
 
 ## Giới hạn hiện tại
 
-- Chỉ hỗ trợ GNOME Shell 50.
+- Chỉ hỗ trợ GNOME Shell 50 trên Linux; không chạy được trên Windows (phụ thuộc GNOME Shell, `/proc`, `/sys`). Bản Windows phải viết lại (Rainmeter hoặc ứng dụng riêng).
 - Chưa có trang cài đặt đồ hoạ; đổi cấu hình bằng `hud-config.sh` hoặc sửa `config.json`.
 - GPU: đủ thông số với NVIDIA (cần `nvidia-smi`); AMD chỉ có % tải; Intel chưa hỗ trợ.
 - Nhiệt độ CPU chỉ nhận cảm biến `coretemp`, `k10temp`, `zenpower`.

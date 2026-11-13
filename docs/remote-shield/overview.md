@@ -78,8 +78,8 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 
 ## Quy mô hiện tại
 
-- Khoảng 1.600 dòng code: shim C 763 dòng, extension 510 dòng JS, script cài/gỡ/đóng gói khoảng 220 dòng.
-- Gói cài 56 KB.
+- Khoảng 1.950 dòng code: shim C 821 dòng, extension 833 dòng JS (core 595, overlay 206, extension 32), script cài/gỡ/đóng gói/xem trước khoảng 270 dòng.
+- Gói cài 64 KB.
 - Đang chạy trên 1 máy (`luannt-pc`): card NVIDIA GTX 1660, 2 màn hình Dell (DP-2 chính, HDMI-3 phụ).
 - Đã thử: Desktop Sharing (RDP vào phiên đang mở) và Remote Login (RDP khi chưa đăng nhập) đều hoạt động.
 
@@ -98,6 +98,8 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 - Chuột thật tại chỗ có thể vẫn di chuyển con trỏ (con trỏ bị ẩn trên màn hình thật nhưng người remote có thể thấy nó nhảy). Chưa kiểm chứng.
 - RDP phải ở chế độ chỉ gửi màn hình chính (`mirror-primary`); không hỗ trợ gửi nhiều màn hình.
 - Thay đổi thư viện shim cần đăng xuất rồi đăng nhập lại.
+- Màn che chỉ giống phần chính của màn khóa (hình nền mờ, giờ, ngày, câu gợi ý); chưa vẽ thanh trên cùng (biểu tượng mạng, âm lượng, nguồn) và thông báo của màn khóa thật. Màn che là ảnh tĩnh, đồng hồ cập nhật theo phút.
+- Hình nền chỉ hỗ trợ kiểu hiển thị "zoom" (mặc định); hình nền dạng slideshow XML thì dùng màu nền.
 
 ## Roadmap (tạm dự kiến)
 
