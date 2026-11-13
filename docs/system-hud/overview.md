@@ -19,7 +19,7 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
   Nguồn số liệu                          System HUD (chạy trong gnome-shell)
   ─────────────                          ───────────────────────────────────
   /proc (CPU, RAM, disk, net, uptime) ─┐
-  /sys/class/hwmon (nhiệt độ)          ├─► Sensors ──(3 s/lần)──► Animator ──(15 khung/s, liên tục)───► drawHud
+  /sys/class/hwmon (nhiệt độ)          ├─► Sensors ──(3 s/lần)──► Animator ──(10 khung/s, liên tục)───► drawHud
   nvidia-smi (GPU, luồng 1 s/lần)      │    gom số liệu,            nội suy mượt                   vẽ theo theme
   ip addr (địa chỉ IP)               ──┘    lịch sử 60 mẫu                                       (Cairo + Pango)
                                                                                                       │
@@ -69,12 +69,12 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
 
 - Khoảng 2.400 dòng: hud.js 1.463 dòng (5 theme), sensors.js 393, core.js 223, các file khác khoảng 330.
 - 5 theme, 6 khối thông tin (header, CPU, RAM, GPU, Disk, Network) + footer.
-- Đang chạy trên 1 máy: theme orbital, màn phụ (HDMI-3), mép trái, rộng 25%, cập nhật 3 giây/lần, hiệu ứng 3 giây ở 15 khung/giây (gnome-shell tốn khoảng 31% một nhân CPU; 30 khung/giây tốn khoảng 43% và làm CPU nóng hơn chừng 9°C).
+- Đang chạy trên 1 máy: theme orbital, màn phụ (HDMI-3), mép trái, rộng 25%, cập nhật 3 giây/lần, hiệu ứng 3 giây ở 10 khung/giây (30 khung/giây làm gnome-shell tốn khoảng 43% một nhân CPU và CPU nóng hơn rõ; 15 khung/giây khoảng 31%; 5 khung/giây khoảng 22% nhưng giật).
 
 ## Đặc điểm nổi bật
 
 - Không bao giờ che cửa sổ, không nhận chuột (vẽ trong lớp hình nền).
-- Nhẹ: lấy mẫu 3 giây/lần; vẽ 15 khung/giây (muốn nhẹ hơn: `animMs` 900 thì chỉ vẽ trong 0,9 giây rồi dừng); nền khung được vẽ sẵn một lần.
+- Nhẹ: lấy mẫu 3 giây/lần; vẽ 10 khung/giây (muốn nhẹ hơn: `animMs` 900 thì chỉ vẽ trong 0,9 giây rồi dừng); nền khung được vẽ sẵn một lần.
 - Không cần quyền root, không cần thư viện ngoài.
 - Bố cục tự co giãn theo chiều cao màn hình (thiết kế chuẩn rộng 480 px).
 

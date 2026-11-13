@@ -128,7 +128,7 @@ File `~/.local/share/gnome-shell/extensions/system-hud@ubuntu-assistant/config.j
 | `gap` | 12 | 12 | Khoảng cách tới mép, top bar, dock |
 | `intervalMs` | 3000 | 3000 | Chu kỳ đo (tối thiểu 500). Giảm thì tốn CPU hơn và đồ thị 60 mẫu phủ ít thời gian hơn |
 | `animMs` | 3000 (trước 2026-11-13: 900) | 3000 (chuyển liên tục suốt chu kỳ đo) | Thời gian hiệu ứng; `0` = tắt hiệu ứng (vẽ 1 lần mỗi mẫu) |
-| `fps` | 15 (trước 2026-11-13: 30) | 15 (từ 2026-11-13: với hiệu ứng liên tục, 30 fps tốn khoảng 43% một nhân và làm CPU giữ xung turbo, nóng ~72°C; 15 fps khoảng 31%, ~63°C; người dùng thấy đủ mượt) | Số khung/giây khi đang chạy hiệu ứng |
+| `fps` | 10 (trước 2026-11-13: 30) | 10 (người dùng chọn 2026-11-13. gnome-shell với hiệu ứng liên tục: 30 fps khoảng 43% một nhân, CPU giữ xung turbo ~72°C; 15 fps khoảng 31%; 5 fps khoảng 22% nhưng giật) | Số khung/giây khi đang chạy hiệu ứng |
 
 Thiết lập ngoài cũng ảnh hưởng tới HUD:
 - **Màn chính** (`~/.config/monitors.xml`): quyết định `primary`/`secondary`.

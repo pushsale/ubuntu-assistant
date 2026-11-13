@@ -6,5 +6,5 @@
   "gap": 12,
   "intervalMs": 3000,
   "animMs": 3000,
-  "fps": 15
+  "fps": 10
 }
