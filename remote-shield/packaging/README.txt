@@ -7,6 +7,8 @@ Khi có người kết nối RDP vào phiên đang mở:
   - Người remote vẫn thấy và điều khiển desktop thật, đủ mọi app đang mở.
   - Cửa sổ ở màn phụ được dồn sang màn chính để người remote thấy hết.
 Khi ngắt kết nối: cửa sổ về lại chỗ cũ, máy tự khoá, màn hình hiện lại bình thường.
+Máy đang khoá vẫn remote vào được: người remote thấy màn khoá, mở khoá từ xa (màn hình thật vẫn bị che).
+Không cần cài thêm extension "Allow Locked Remote Desktop"; nếu máy đã có, install.sh tự gỡ.
 
 YÊU CẦU
   - Ubuntu dùng GNOME Shell 50 trên Wayland (đã thử: Ubuntu 26.04, card NVIDIA).

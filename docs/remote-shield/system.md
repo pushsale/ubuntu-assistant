@@ -79,21 +79,31 @@ Vì sao RDP không bị che: gnome-remote-desktop lấy ảnh từ stage của M
 |---|---|
 | Nạp core.js kèm `?v=<Date.now()>` (bỏ qua cache ESM) | [extension.js:9](../../remote-shield/remote-shield@ubuntu-assistant/extension.js) |
 | Nạp overlay.js cùng mã phiên bản | [core.js:22](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Phiên headless (Remote Login) → không làm gì | [core.js:101](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| enable: đọc config, xoá cờ, vẽ `shield.png`, nghe `new-handle` | [core.js:106-124](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Nhận diện phiên remote | `_isRemote` [core.js:191](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Theo dõi handle, `stopped` → `_sync` | [core.js:198-219](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Kéo rèm | `_engage` [core.js:233](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Chờ xác nhận / theo dõi | `_verify` [core.js:248](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_watch` [core.js:276](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_shimProblem` [core.js:291](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Fail-closed | `_fail` [core.js:304](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Mở rèm (khoá trước, 800 ms sau mới xoá cờ) | `_disengage` [core.js:316](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Dồn / trả cửa sổ | `_gatherWindows` [core.js:345](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreWindows` [core.js:377](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Chặn input + phím khẩn cấp Ctrl+Alt+Shift+Backspace | `_filter` [core.js:413](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Phiên headless (Remote Login) → không làm gì | [core.js:102](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| enable: đọc config, xoá cờ, vẽ `shield.png`, nghe `new-handle` | [core.js:107-128](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Nhận diện phiên remote | `_isRemote` [core.js:251](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Theo dõi handle, `stopped` → `_sync` | [core.js:258-279](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Kéo rèm | `_engage` [core.js:293](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Chờ xác nhận / theo dõi | `_verify` [core.js:308](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_watch` [core.js:336](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_shimProblem` [core.js:351](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Fail-closed | `_fail` [core.js:364](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Mở rèm (khoá trước, 800 ms sau mới xoá cờ) | `_disengage` [core.js:376](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Dồn / trả cửa sổ | `_gatherWindows` [core.js:405](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreWindows` [core.js:437](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Cho remote khi màn hình khóa (thay hàm inhibit/uninhibit của controller) | `_allowLockedRemote` [core.js:200](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreLockedRemote` [core.js:230](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Chặn input + phím khẩn cấp Ctrl+Alt+Shift+Backspace | `_filter` [core.js:473](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
 | Vẽ ảnh chữ 1400×320 (Pango/Cairo) | [overlay.js](../../remote-shield/remote-shield@ubuntu-assistant/overlay.js) |
 
 Quy tắc nhận diện (`_isRemote`): handle có GType chứa `RemoteDesktop`, hoặc `disable_animations = true`, hoặc config `matchAllRemote`. Một kết nối RDP sinh 2 handle: `MetaScreenCastSessionHandle` (disable-animations=true) và `MetaRemoteDesktopSessionHandle` (false). Chia sẻ màn hình khi họp trực tuyến không khớp quy tắc nên không bị che.
 
 Chặn input: sự kiện từ thiết bị có `get_device_node()` (thiết bị thật trong `/dev/input`) trả `EVENT_STOP`. Thiết bị ảo của phiên RDP không có device node nên được cho qua. `DEVICE_ADDED`/`DEVICE_REMOVED`/`NOTHING` luôn được cho qua.
+
+Remote khi màn hình khóa (`allowWhenLocked`):
+- Mặc định GNOME chặn remote khi khóa máy. `_sessionUpdated` trong `ui/main.js` gọi `inhibit_remote_access()` khi khóa và `uninhibit_remote_access()` khi mở khóa; khi bị chặn, Mutter đóng mọi phiên remote và từ chối phiên mới.
+- Remote Shield gán đè hai hàm này trên đối tượng controller (thuộc tính JS riêng của instance):
+  - lệnh chặn bị bỏ qua và được đếm vào `skipped`;
+  - lệnh mở chặn tương ứng cũng bị bỏ qua, nhờ vậy bộ đếm của Mutter luôn cân bằng.
+- Bật lúc màn hình đang khóa: gỡ chặn ngay.
+- Khi tắt extension: trả lại hàm gốc (`delete` thuộc tính, hoặc gán lại nếu trước đó đã có bản đè khác), rồi chặn thật đủ số lần đã bỏ qua.
+- Thay thế extension Allow Locked Remote Desktop (`allowlockedremotedesktop@kamens.us`). `install.sh` tự gỡ extension đó.
 
 Dồn cửa sổ: chỉ lấy loại NORMAL, DIALOG, MODAL_DIALOG, UTILITY; bỏ override-redirect và skip-taskbar (dock, DING). Mỗi cửa sổ lưu `{window, monitor, rect, maximized, fullscreen}`. Khi trả: bỏ cửa sổ đã đóng (`get_compositor_private()` null) hoặc màn đã rút. Sau đó `move_to_monitor` cũ, khôi phục fullscreen/maximize; nếu không thì `unmaximize()` + `move_resize_frame(false, x, y, w, h)`.
 
@@ -156,6 +166,7 @@ Bố cục nội bộ libdrm mà shim dựa vào:
   - `global.backend.get_remote_access_controller()`, tín hiệu `new-handle(handle)`.
   - `handle.connect('stopped')`, `handle.stop()`.
   - `global.backend.is_headless()`.
+  - `controller.inhibit_remote_access()` / `uninhibit_remote_access()`: GNOME gọi khi khóa/mở khóa; Remote Shield gán đè (xem mục 3.1).
 - **Extension → shim**: chỉ qua file (mục 4). Giao thức một chiều: extension bật/tắt cờ, shim báo trạng thái.
 - **Shim → kernel**:
   - Gọi trực tiếp `DRM_IOCTL_MODE_CREATE_DUMB`, `MAP_DUMB`, `ADDFB2`, `GETPLANERESOURCES`, `OBJ_GETPROPERTIES`, `GETPROPERTY`, `GET_CAP`.
@@ -181,6 +192,7 @@ File `~/.local/share/gnome-shell/extensions/remote-shield@ubuntu-assistant/confi
 | `failClosed` | true | false: không che được thì chỉ thông báo, **vẫn để remote chạy và lộ màn hình** |
 | `verifyMs` | 4000 | Thời gian chờ khung trắng đầu tiên. Quá thời gian thì `_fail` |
 | `gatherWindows` | true | false: không dồn cửa sổ từ màn phụ |
+| `allowWhenLocked` | true | false: GNOME chặn Desktop Sharing khi màn hình khóa; vì Remote Shield khóa máy sau mỗi lần ngắt, sẽ không remote lại được tới khi có người mở khóa tại máy |
 | `message`, `submessage` | tiếng Việt | Dòng chữ trên màn trắng. Vẽ lại lúc bật extension |
 
 Thiết lập hệ thống liên quan:
@@ -205,6 +217,7 @@ Thiết lập hệ thống liên quan:
 | 2026-11-12 | Dồn/trả cửa sổ màn phụ; chuyển sang file khởi động mỏng |
 | 2026-11-13 | Bỏ qua phiên headless (Remote Login bị văng ra sau khi gõ mật khẩu) |
 | 2026-11-13 | #16: `install.sh` hợp nhất (kiểm tra máy, `--rdp`, `--remote-login`, `--force`); drop-in chuyển sang template `org.gnome.Shell@.service.d`; `package.sh` tạo gói tar.gz |
+| 2026-11-13 | #19: tích hợp remote khi màn hình khóa (`allowWhenLocked`, mặc định bật); `install.sh` gỡ extension Allow Locked Remote Desktop (đã gỡ trên máy này) |
 
 ## 9. Cấu trúc thư mục
 
@@ -288,6 +301,7 @@ grdctl status
 Trạng thái runtime (2026-11-13):
 - Đã cài, extension ACTIVE, shim nạp trong gnome-shell (`layout_ok=1`).
 - Desktop Sharing bật (cổng 3390 khi Remote Login giữ 3389), Remote Login bật.
+- Remote khi màn hình khóa do Remote Shield đảm nhận; extension Allow Locked Remote Desktop đã gỡ.
 - Màn chính là DP-2. Gói `dist/remote-shield-2.0.tar.gz` đã tạo.
 
 ## 13. Architectural Decisions & Rationale
@@ -304,6 +318,7 @@ Trạng thái runtime (2026-11-13):
 | Chặn input theo "có device node" | Thiết bị thật có `/dev/input/*`; thiết bị ảo RDP thì không — phân biệt được mà không cần biết tên thiết bị |
 | RDP `mirror-primary` + dồn cửa sổ, không dùng `extend` | `extend` tạo màn ảo trống, người remote không thấy app đang mở; Alt+Tab không kéo cửa sổ sang màn RDP (đã thử) |
 | File khởi động mỏng `extension.js` → `core.js?v=` | GJS cache ESM theo URL; không có cách này mỗi lần sửa phải đăng xuất |
+| Tự cho remote khi màn hình khóa, không dựa vào extension ngoài | Remote Shield khóa máy sau mỗi lần ngắt; nếu GNOME chặn remote khi khóa thì lần kết nối sau thất bại. Tích hợp để gói cài một lần là đủ. Đếm lệnh chặn/mở chặn để Mutter không báo `inhibit_count > 0` như bản extension cũ |
 | Bỏ qua phiên headless | Remote Login có màn ảo, không có gì để che; nếu không bỏ qua thì fail-closed cắt phiên ngay sau khi đăng nhập |
 | Drop-in template `org.gnome.Shell@.service.d` | Áp dụng cho mọi biến thể phiên (@ubuntu, @wayland) khi cài máy khác |
 | Cài theo user, đóng gói tar.gz thay vì .deb | Mọi thành phần nằm trong `$HOME`, không cần root; .deb chỉ đáng làm khi cần cài nhiều user/máy |
@@ -324,6 +339,9 @@ Trạng thái runtime (2026-11-13):
 | Menu Ubuntu và HUD nhảy sang màn trái | Màn chính bị đổi sang HDMI-3 (một màn mất tín hiệu thoáng qua, Mutter lưu lại monitors.xml); không do Remote Shield | Đặt lại DP-2 qua `ApplyMonitorsConfig`. RDP mirror-primary gửi đúng màn chính nên màn chính sai thì người remote xem sai màn |
 | Người remote không thấy app ở màn phụ | `mirror-primary` chỉ gửi màn chính | `gatherWindows` |
 | Log có `JS ERROR … grabbedsOldRect` | Lỗi của extension tiling-assistant | Không liên quan, bỏ qua |
+| Máy tự khóa sau khi ngắt, lần sau không remote vào được (máy mới) | GNOME chặn remote khi khóa; trước đây phải cài thêm extension Allow Locked Remote Desktop | `allowWhenLocked` (#19) |
+| Log `meta_dbus_session_manager_uninhibit: assertion 'priv->inhibit_count > 0' failed` | Extension Allow Locked Remote Desktop bỏ qua lệnh chặn nhưng vẫn để lệnh mở chặn chạy khi mở khóa | Remote Shield bỏ qua cả cặp; nếu còn thấy log này, kiểm tra xem còn extension nào khác đè `inhibit_remote_access` |
+| Cùng lúc có Remote Shield và extension khác đè `inhibit_remote_access` | Mỗi bên lưu "hàm gốc" là bản đè của bên kia; tắt theo thứ tự sai sẽ khôi phục nhầm | `install.sh`: tắt Remote Shield → gỡ extension kia → bật Remote Shield |
 | `shieldctl status` báo sai khi có 2 gnome-shell cùng user | `pgrep … | head -1` lấy pid đầu tiên | Hiếm (chỉ khi Remote Login và phiên tại chỗ cùng tồn tại); chưa sửa |
 | Phiên headless khởi động xoá cờ của phiên tại chỗ | Hai phiên dùng chung `$XDG_RUNTIME_DIR`; shim xoá `blank` trong constructor | Chưa xảy ra vì GNOME không cho cùng user đăng nhập tại chỗ và Remote Login đồng thời; nếu đổi thì cần tách cờ theo pid |
 

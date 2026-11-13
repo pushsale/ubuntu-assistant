@@ -107,17 +107,40 @@ echo "  $EXT_DEST"
 # Shell đang chạy đã biết extension (máy đã cài trước đó): nạp lại để chạy code mới ngay.
 # Không nạp lại khi đang có phiên remote: tắt extension sẽ mở rèm và khóa máy.
 state() { gnome-extensions info "$UUID" 2>/dev/null | awk '/State:/{print $2}'; }
+wait_state() { for _ in $(seq 50); do [ "$(state)" = "$1" ] && break; sleep 0.1; done; }
+
+# Remote Shield đã tự cho phép remote khi màn hình khóa (allowWhenLocked): gỡ extension
+# Allow Locked Remote Desktop nếu có, để hai bên không cùng thay một hàm của Mutter.
+# Thứ tự: tắt Remote Shield -> gỡ extension kia (nó trả hàm gốc lại) -> bật Remote Shield.
+OLD_LOCKED="allowlockedremotedesktop@kamens.us"
+remove_old_locked() {
+    gnome-extensions info "$OLD_LOCKED" >/dev/null 2>&1 || [ -d "$HOME/.local/share/gnome-shell/extensions/$OLD_LOCKED" ] || return 0
+    if gnome-extensions uninstall "$OLD_LOCKED" 2>/dev/null || rm -rf "$HOME/.local/share/gnome-shell/extensions/${OLD_LOCKED:?}"; then
+        echo "Đã gỡ extension $OLD_LOCKED (Remote Shield đã có sẵn chức năng này)."
+    else
+        warn "không gỡ được $OLD_LOCKED (có thể là extension cài cho toàn hệ thống); hãy tắt nó trong Extensions."
+    fi
+    current=$(gsettings get org.gnome.shell enabled-extensions)
+    if [[ "$current" == *"$OLD_LOCKED"* ]]; then
+        new=$(python3 -c "import ast,sys; print(str([x for x in ast.literal_eval(sys.argv[1].replace('@as ','')) if x!=sys.argv[2]]))" "$current" "$OLD_LOCKED")
+        gsettings set org.gnome.shell enabled-extensions "$new"
+    fi
+}
+
 FIRST_INSTALL=1
 if [ -e "$RUN_DIR/blank" ]; then
     echo "Đang có phiên remote: chưa nạp lại extension, chạy lại install.sh sau khi ngắt kết nối."
     FIRST_INSTALL=0
 elif [ "$(state)" = "ACTIVE" ]; then
     gnome-extensions disable "$UUID"
-    for _ in $(seq 50); do [ "$(state)" = "INACTIVE" ] && break; sleep 0.1; done
+    wait_state INACTIVE
+    remove_old_locked
     gnome-extensions enable "$UUID"
-    for _ in $(seq 50); do [ "$(state)" = "ACTIVE" ] && break; sleep 0.1; done
+    wait_state ACTIVE
     echo "Đã nạp lại extension (trạng thái: $(state))."
     FIRST_INSTALL=0
+else
+    remove_old_locked   # cài lần đầu: Remote Shield thay thế từ lần đăng nhập sau
 fi
 
 # ---------- RDP ----------

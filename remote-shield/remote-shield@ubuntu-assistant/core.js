@@ -29,6 +29,7 @@ const DEFAULTS = {
     failClosed: true,         // không che được màn hình -> ngắt phiên remote và khóa máy
     verifyMs: 4000,           // thời gian chờ khung trắng đầu tiên lên màn hình
     gatherWindows: true,      // dồn cửa sổ ở màn phụ sang màn chính (màn RDP thấy), trả về chỗ cũ khi ngắt
+    allowWhenLocked: true,    // vẫn cho kết nối Desktop Sharing khi màn hình đang khóa (GNOME mặc định chặn)
     message: 'Máy tính đang được điều khiển từ xa',
     submessage: 'Màn hình, bàn phím và chuột tại chỗ tạm thời bị vô hiệu hoá',
 };
@@ -121,6 +122,8 @@ export class ShieldCore {
 
         this._controller = global.backend.get_remote_access_controller();
         this._newHandleId = this._controller?.connect('new-handle', (_c, handle) => this._onNewHandle(handle)) ?? 0;
+        if (this._cfg.allowWhenLocked)
+            this._allowLockedRemote();
         log('đã bật');
     }
 
@@ -142,6 +145,7 @@ export class ShieldCore {
         this._restoreWindows();
         this._engaged = false;
         setFlag(false);
+        this._restoreLockedRemote();
         this._controller = null;
         this._handles = null;
         this._timers = null;
@@ -184,6 +188,62 @@ export class ShieldCore {
         } catch (e) {
             log(`không hiện được thông báo: ${e.message}`);
         }
+    }
+
+    // ---------- cho remote khi màn hình khóa ----------
+
+    // GNOME (ui/main.js, _sessionUpdated) gọi inhibit_remote_access() khi khóa màn hình và
+    // uninhibit_remote_access() khi mở khóa: lúc khóa, Mutter đóng mọi phiên remote và từ chối phiên mới.
+    // Remote Shield tự khóa máy mỗi lần ngắt kết nối, nên nếu giữ nguyên thì không remote lại được.
+    // Thay hai hàm trên controller: bỏ qua lệnh chặn và lệnh mở tương ứng (đếm để luôn cân bằng,
+    // tránh cảnh báo 'inhibit_count > 0' của Mutter). Thay thế extension Allow Locked Remote Desktop.
+    _allowLockedRemote() {
+        const ctl = this._controller;
+        if (!ctl || this._lockPatch)
+            return;
+        const patch = {
+            inhibit: ctl.inhibit_remote_access,
+            uninhibit: ctl.uninhibit_remote_access,
+            ownInhibit: Object.hasOwn(ctl, 'inhibit_remote_access'),
+            ownUninhibit: Object.hasOwn(ctl, 'uninhibit_remote_access'),
+            skipped: 0,
+        };
+        this._lockPatch = patch;
+        ctl.inhibit_remote_access = () => {
+            patch.skipped++;
+            log('màn hình khóa: vẫn cho phép kết nối remote');
+        };
+        ctl.uninhibit_remote_access = () => {
+            if (patch.skipped > 0)
+                patch.skipped--;
+            else
+                patch.uninhibit.call(ctl);
+        };
+        // Bật lúc màn hình đang khóa: GNOME đã chặn rồi -> gỡ chặn ngay, và bỏ qua lệnh mở khi mở khóa
+        if (Main.sessionMode.isLocked) {
+            patch.uninhibit.call(ctl);
+            patch.skipped++;
+        }
+        log('cho phép remote khi màn hình khóa');
+    }
+
+    _restoreLockedRemote() {
+        const ctl = this._controller;
+        const patch = this._lockPatch;
+        this._lockPatch = null;
+        if (!ctl || !patch)
+            return;
+        if (patch.ownInhibit)
+            ctl.inhibit_remote_access = patch.inhibit;
+        else
+            delete ctl.inhibit_remote_access;
+        if (patch.ownUninhibit)
+            ctl.uninhibit_remote_access = patch.uninhibit;
+        else
+            delete ctl.uninhibit_remote_access;
+        // GNOME vẫn đang coi là đã chặn (sẽ gọi mở chặn khi mở khóa) -> chặn thật cho cân bằng
+        for (; patch.skipped > 0; patch.skipped--)
+            ctl.inhibit_remote_access();
     }
 
     // ---------- theo dõi phiên remote ----------
