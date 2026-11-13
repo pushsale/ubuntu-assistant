@@ -13,7 +13,10 @@ export default class RemoteShieldExtension extends Extension {
             .then(mod => {
                 if (!this._enabled || gen !== this._gen)
                     return; // đã bị tắt trong lúc đang nạp
-                this._core = new mod.ShieldCore(this.path);
+                // _carry sống qua các lần tắt/bật (core.js thì nạp lại mỗi lần): giữ phiên remote đang chạy
+                // khi GNOME tắt rồi bật lại extension lúc khóa máy
+                this._carry ??= {};
+                this._core = new mod.ShieldCore(this.path, this._carry);
                 this._core.enable();
             })
             .catch(e => console.error(`[remote-shield] không nạp được core.js: ${e}\n${e.stack}`));

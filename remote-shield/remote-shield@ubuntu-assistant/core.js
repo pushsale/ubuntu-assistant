@@ -2,7 +2,7 @@
 // Khi có phiên Remote Desktop (RDP của gnome-remote-desktop) đang chạy:
 //   - màn hình thật hiện màn che giống hệt màn khóa (hình nền mờ, giờ, ngày, dòng gợi ý) nhờ thư viện
 //     shield-shim nạp trong gnome-shell; hình gửi cho người remote không bị ảnh hưởng
-//   - chặn chuột, bàn phím, touchpad thật tại máy; chỉ nhận thao tác từ phía remote
+//   - chặn chuột, bàn phím, touchpad thật tại máy (shim bỏ sự kiện ngay từ libinput); chỉ nhận thao tác từ phía remote
 //   - người tại máy bấm chuột / phím bất kỳ -> ngắt remote, khóa máy, hiện ô nhập mật khẩu (localTakeover)
 // Khi phiên remote kết thúc: mở lại input, khóa máy, rồi mới trả lại màn hình.
 // Không che được màn hình (shim chưa nạp / driver từ chối) -> ngắt phiên remote và khóa máy (failClosed).
@@ -11,7 +11,9 @@
 //   blank               có file = yêu cầu che màn hình
 //   shield-<W>x<H>.png  ảnh màn che toàn màn cho từng kích thước màn hình (overlay.js vẽ, mỗi phút vẽ lại)
 //   shield.gen          đổi nội dung mỗi lần vẽ lại -> shim vẽ lại khung đang hiển thị
-//   shim-status         trạng thái shim ghi ra (pid, want_blank, swapped_since_on, swap_failed, guard...)
+//   input-block         có file và được ghi lại mỗi 2 s = chặn input thật (quá 6 s không ghi lại -> shim thôi chặn)
+//   local-press         shim ghi "<số lần bấm> <1 nếu Ctrl+Alt+Shift+Backspace>" mỗi lần người tại máy bấm
+//   shim-status         trạng thái shim ghi ra (pid, want_blank, swapped_since_on, swap_failed, guard, input_hook...)
 
 import Gettext from 'gettext';
 import GLib from 'gi://GLib';
@@ -42,10 +44,14 @@ const DEFAULTS = {
 const RUN_DIR = GLib.build_filenamev([GLib.get_user_runtime_dir(), 'remote-shield']);
 const FLAG = GLib.build_filenamev([RUN_DIR, 'blank']);
 const STATUS = GLib.build_filenamev([RUN_DIR, 'shim-status']);
+const INPUT_FLAG = GLib.build_filenamev([RUN_DIR, 'input-block']);
+const PRESS_FILE = GLib.build_filenamev([RUN_DIR, 'local-press']);
+const INPUT_BEAT_MS = 2000;
 const OLD_OVERLAY = GLib.build_filenamev([RUN_DIR, 'shield.png']); // ảnh chữ kiểu cũ (nền trắng)
 const GEN = GLib.build_filenamev([RUN_DIR, 'shield.gen']);          // đổi nội dung = báo shim vẽ lại
 const CACHE_DIR = GLib.build_filenamev([GLib.get_user_cache_dir(), 'remote-shield']);
 
+// Bộ lọc Clutter dự phòng (chỉ dùng khi shim đang chạy là bản cũ, chưa chặn được input): các sự kiện luôn cho qua
 const PASS_EVENTS = new Set([
     Clutter.EventType.NOTHING,
     Clutter.EventType.DEVICE_ADDED,
@@ -84,21 +90,27 @@ function readStatus() {
     }
 }
 
-function setFlag(on) {
+function writeFlag(path, on) {
     try {
         GLib.mkdir_with_parents(RUN_DIR, 0o700);
         if (on)
-            GLib.file_set_contents(FLAG, '1');
-        else if (GLib.file_test(FLAG, GLib.FileTest.EXISTS))
-            Gio.File.new_for_path(FLAG).delete(null);
+            GLib.file_set_contents(path, '1');
+        else if (GLib.file_test(path, GLib.FileTest.EXISTS))
+            Gio.File.new_for_path(path).delete(null);
     } catch (e) {
-        log(`không ${on ? 'tạo' : 'xoá'} được ${FLAG}: ${e.message}`);
+        log(`không ${on ? 'tạo' : 'xoá'} được ${path}: ${e.message}`);
     }
 }
 
+function setFlag(on) {
+    writeFlag(FLAG, on);
+}
+
 export class ShieldCore {
-    constructor(path) {
+    // carry: object do extension.js giữ qua các lần tắt/bật (core.js được nạp lại mỗi lần bật).
+    constructor(path, carry = {}) {
         this.path = path;
+        this._carry = carry;
     }
 
     enable() {
@@ -120,6 +132,7 @@ export class ShieldCore {
         this._shellPid = String(new Gio.Credentials().get_unix_pid());
 
         setFlag(false); // phiên mới luôn bắt đầu với màn hình bình thường
+        writeFlag(INPUT_FLAG, false);
         this._painter = new ShieldPainter(CACHE_DIR);
         this._bgSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.background'});
         this._ifSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
@@ -134,24 +147,46 @@ export class ShieldCore {
         this._newHandleId = this._controller?.connect('new-handle', (_c, handle) => this._onNewHandle(handle)) ?? 0;
         if (this._cfg.allowWhenLocked)
             this._allowLockedRemote();
+
+        // shim báo người tại máy vừa bấm phím / chuột (input thật đã bị chặn ở libinput)
+        this._pressMonitor = Gio.File.new_for_path(PRESS_FILE).monitor_file(Gio.FileMonitorFlags.NONE, null);
+        this._pressMonitor.connect('changed', (_m, _f, _o, ev) => {
+            if (ev === Gio.FileMonitorEvent.CHANGES_DONE_HINT)
+                this._onLocalPress();
+        });
         log('đã bật');
+
+        // Đang có phiên remote mà GNOME tắt rồi bật lại extension (xem disable()): theo dõi tiếp, kéo rèm lại.
+        const carried = this._carry.handles;
+        this._carry.handles = null;
+        if (carried && GLib.get_monotonic_time() - carried.time < 10 * GLib.USEC_PER_SEC && carried.list.length) {
+            log(`tiếp tục theo dõi ${carried.list.length} handle remote từ trước khi extension được bật lại`);
+            for (const handle of carried.list)
+                this._track(handle);
+        }
     }
 
     disable() {
-        // Gọi khi đăng xuất / tắt extension (không gọi khi khóa máy vì có session-mode unlock-dialog)
+        // Gọi khi đăng xuất, khi tắt extension, VÀ khi khóa máy: lúc khóa GNOME tắt các extension không có
+        // session-mode unlock-dialog (vd. System HUD, Ubuntu Dock), mà tắt một extension thì GNOME tắt rồi bật
+        // lại mọi extension bật sau nó (extensionSystem.js, _callExtensionDisable). Lệnh lock() ngay trong
+        // _disengage() cũng kích hoạt chuỗi này, đồng bộ.
         if (this._headless)
             return;
         if (this._newHandleId)
             this._controller.disconnect(this._newHandleId);
         this._newHandleId = 0;
+        // Phiên remote vẫn chạy: chuyển handle cho lần bật kế tiếp (thường ngay sau đó) để kéo rèm lại.
+        // Không làm vậy thì người remote khóa máy rồi mở khóa -> màn hình thật lộ desktop.
+        this._carry.handles = this._handles.size
+            ? {list: [...this._handles.keys()], time: GLib.get_monotonic_time()} : null;
         for (const [h, id] of this._handles)
             h.disconnect(id);
         this._handles.clear();
+        this._pressMonitor?.cancel();
+        this._pressMonitor = null;
+        this._blockInput(false);
         this._clearTimers();
-        if (this._filterId) {
-            Clutter.Event.remove_filter(this._filterId);
-            this._filterId = 0;
-        }
         this._restoreWindows();
         this._engaged = false;
         setFlag(false);
@@ -169,9 +204,22 @@ export class ShieldCore {
     // ---------- tiện ích ----------
 
     _timeout(ms, fn) {
+        if (!this._timers)
+            return 0; // đã tắt (vd. GNOME tắt extension ngay trong lệnh lock())
         const id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
             this._timers?.delete(id);
             return fn();
+        });
+        this._timers.add(id);
+        return id;
+    }
+
+    _interval(ms, fn) {
+        if (!this._timers)
+            return 0;
+        const id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+            fn();
+            return GLib.SOURCE_CONTINUE;
         });
         this._timers.add(id);
         return id;
@@ -263,6 +311,51 @@ export class ShieldCore {
         });
     }
 
+    // ---------- chặn input thật ----------
+
+    // Chặn ở shim (libinput): bộ lọc sự kiện Clutter không dùng được vì bộ lọc của Mutter đứng trước,
+    // giao phím / chuột thẳng cho cửa sổ app rồi dừng; bộ lọc của extension chỉ thấy sự kiện rơi vào
+    // giao diện shell (hình nền, thanh trên cùng) nên lúc chặn được lúc không, và input thật lọt vào app.
+    _blockInput(on) {
+        if (!on) {
+            this._cancel(this._inputBeatId);
+            this._inputBeatId = 0;
+            writeFlag(INPUT_FLAG, false);
+            if (this._filterId) {
+                Clutter.Event.remove_filter(this._filterId);
+                this._filterId = 0;
+            }
+            return;
+        }
+        const st = readStatus();
+        const shimInput = st?.pid === this._shellPid && st.input_hook === '1';
+        if (shimInput) {
+            writeFlag(INPUT_FLAG, true);
+            this._cancel(this._inputBeatId);
+            // ghi lại định kỳ: extension chết / JS treo thì shim tự thôi chặn sau 6 s
+            this._inputBeatId = this._interval(INPUT_BEAT_MS, () => writeFlag(INPUT_FLAG, true));
+        } else if (!this._filterId) {
+            log('shim đang chạy chưa hỗ trợ chặn input (cần đăng xuất / đăng nhập lại sau khi cài): ' +
+                'dùng bộ lọc Clutter dự phòng, input thật vẫn có thể lọt vào cửa sổ app');
+            this._filterId = Clutter.Event.add_filter(global.stage, event => this._filter(event));
+        }
+    }
+
+    _onLocalPress() {
+        if (!this._engaged)
+            return;
+        let combo = false;
+        try {
+            const [ok, bytes] = GLib.file_get_contents(PRESS_FILE);
+            combo = ok && new TextDecoder().decode(bytes).trim().split(' ')[1] === '1';
+        } catch (e) {
+            // file vừa bị xoá
+        }
+        // Tắt localTakeover: vẫn còn lối thoát Ctrl+Alt+Shift+Backspace
+        if (this._cfg.localTakeover || combo)
+            this._localTakeover();
+    }
+
     // Người tại máy bấm chuột / phím trên màn che: ngắt remote, khóa máy, mở sẵn ô mật khẩu.
     _localTakeover() {
         if (this._takingOver || !this._engaged)
@@ -344,6 +437,10 @@ export class ShieldCore {
     _onNewHandle(handle) {
         if (!this._isRemote(handle))
             return; // vd. chia sẻ màn hình trong cuộc họp: không che
+        this._track(handle);
+    }
+
+    _track(handle) {
         const id = handle.connect('stopped', () => {
             handle.disconnect(id);
             this._handles?.delete(handle);
@@ -392,8 +489,8 @@ export class ShieldCore {
         this._engaged = true;
         this._cancel(this._unflagId); // phiên mới tới khi đang mở rèm của phiên trước
         this._unflagId = 0;
-        if (this._cfg.blockInput && !this._filterId)
-            this._filterId = Clutter.Event.add_filter(global.stage, event => this._filter(event));
+        if (this._cfg.blockInput)
+            this._blockInput(true);
         this._renderShield(); // giờ hiện tại (nền đã làm mờ sẵn lúc bật extension)
         setFlag(true);
         this._redraw();
@@ -479,24 +576,23 @@ export class ShieldCore {
         this._cancel(this._watchId);
         this._cancel(this._clockId);
         this._verifyId = this._watchId = this._clockId = 0;
-        if (this._filterId) {
-            Clutter.Event.remove_filter(this._filterId);
-            this._filterId = 0;
-        }
+        this._blockInput(false); // trả bàn phím, chuột thật trước khi khóa để gõ được mật khẩu ngay
         this._restoreWindows();
+        const prompt = this._promptAfterLock;
+        this._promptAfterLock = false;
         if (lock && !Main.sessionMode.isLocked && !Main.screenShield?.locked)
             Main.screenShield?.lock(false);
+        // Người tại máy vừa bấm: màn khóa chuyển ngay sang ô nhập mật khẩu (giống bấm phím trên màn khóa).
+        // Gọi ngay ở đây vì lock() ở trên có thể đã làm GNOME tắt extension này (xem disable()).
+        if (prompt && Main.screenShield?.locked)
+            Main.screenShield._activateDialog?.();
+        if (!this._timers)
+            return; // đã bị tắt trong lock(): disable() đã trả màn hình (màn khóa đã hiện)
         // Khóa trước, trả màn hình sau: màn hình thật không lộ desktop dù chỉ một khung
         this._unflagId = this._timeout(lock ? 800 : 0, () => {
             this._unflagId = 0;
             setFlag(false);
             this._redraw();
-            if (this._promptAfterLock) {
-                this._promptAfterLock = false;
-                // màn khóa đang hiện đồng hồ: chuyển ngay sang ô nhập mật khẩu (giống bấm phím trên màn khóa)
-                if (Main.sessionMode.isLocked)
-                    Main.screenShield?._activateDialog?.();
-            }
             this._timeout(250, () => {
                 this._redraw();
                 return GLib.SOURCE_REMOVE;

@@ -8,7 +8,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 |---|---|
 | RDP của GNOME chỉ chia sẻ màn hình: người ngồi tại máy thấy hết mọi thao tác của người remote | Thay khung hình ngay trước khi giao cho card màn hình: màn hình thật nhận khung giống màn khóa, còn ảnh gửi cho RDP vẫn là desktop thật |
 | Che bằng một lớp phủ trong GNOME thì người remote cũng bị che (RDP chụp chính hình GNOME vẽ) | Không che trong GNOME mà che ở tầng thấp hơn (giao khung cho driver), nơi RDP không đi qua |
-| Người tại chỗ vẫn bấm phím, rê chuột được trong lúc người khác đang remote | Chặn input từ thiết bị thật; thiết bị ảo của phiên RDP vẫn được nhận |
+| Người tại chỗ vẫn bấm phím, rê chuột được trong lúc người khác đang remote | Bỏ sự kiện của bàn phím, chuột thật ngay khi Mutter đọc từ libinput (con trỏ thật cũng đứng yên); thiết bị ảo của phiên RDP không đi qua đó nên vẫn được nhận |
 | Ngắt kết nối xong, desktop lộ ra cho người đứng ở máy | Khoá máy trước rồi mới trả lại màn hình |
 | Máy hai màn hình nhưng RDP chỉ gửi màn chính: app ở màn phụ không với tới được | Khi remote vào: dồn cửa sổ ở màn phụ sang màn chính; khi ngắt: trả từng cửa sổ về đúng chỗ cũ |
 | GNOME chặn remote khi màn hình khóa; mà Remote Shield khóa máy sau mỗi lần ngắt, nên lần sau không vào lại được | Remote Shield tự gỡ lệnh chặn đó (thay cho extension Allow Locked Remote Desktop phải cài riêng trước đây); người remote vào màn khóa và mở khóa từ xa, màn hình thật vẫn bị che |
@@ -26,13 +26,14 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
               ▼                                          │
   ┌─────────────────────── gnome-shell (Mutter) ─────────┴──────────┐
   │  Extension Remote Shield  (bộ điều khiển)                        │
-  │    phát hiện phiên RDP → bật cờ che, chặn input, dồn cửa sổ      │
+  │    phát hiện phiên RDP → bật cờ che, cờ chặn input, dồn cửa sổ   │
   │    chờ xác nhận đã che → nếu không: ngắt RDP + khoá máy          │
   │              │ file cờ / file trạng thái ($XDG_RUNTIME_DIR)      │
   │              ▼                                                   │
   │  shield-shim.so  (nạp sẵn vào gnome-shell qua LD_PRELOAD)        │
   │    chặn lệnh giao khung drmModeAtomicCommit                      │
-  │    đổi khung đã vẽ → khung giống màn khóa               │
+  │    đổi khung đã vẽ → khung giống màn khóa                        │
+  │    chặn libinput_get_event: bỏ phím/chuột thật, báo cú bấm       │
   └──────────────────────────────┬──────────────────────────────────┘
                                  ▼ khung giống màn khóa
                     Driver đồ hoạ (KMS) → màn hình thật
@@ -44,7 +45,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 |---|---|---|
 | gnome-remote-desktop | Máy chủ RDP của GNOME: nhận kết nối, gửi hình, nhận phím chuột từ xa | Có sẵn trong Ubuntu |
 | Extension Remote Shield | Biết khi nào có phiên RDP, ra lệnh che, chặn input tại chỗ, dồn cửa sổ, khoá máy khi ngắt, kiểm tra an toàn | GNOME Shell extension (GJS) |
-| shield-shim | Đổi khung hình ngay trước khi giao cho card màn hình | Thư viện C nạp bằng LD_PRELOAD |
+| shield-shim | Đổi khung hình ngay trước khi giao cho card màn hình; chặn bàn phím, chuột thật và báo khi người tại máy bấm | Thư viện C nạp bằng LD_PRELOAD |
 | shieldctl | Lệnh kiểm tra, xem log, bật/tắt tay, gỡ khoá an toàn | Bash |
 | install.sh / package.sh | Cài lên máy, bật RDP, đóng gói đem cài máy khác | Bash |
 
@@ -68,6 +69,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 | 2026-11-13 | Đóng gói `remote-shield-2.0.tar.gz` để cài lên máy Ubuntu khác |
 | 2026-11-13 | Remote được cả khi máy đang khóa, không cần cài thêm extension nào |
 | 2026-11-13 | Màn che giống hệt màn khóa; người tại máy bấm là ngắt remote và nhập mật khẩu vào máy |
+| 2026-11-13 | Chặn bàn phím, chuột tại máy ở tầng thấp hơn (trước đó phím tại máy vẫn lọt vào app và bấm tại máy chỉ thỉnh thoảng ngắt được remote); giữ phiên remote khi người remote khóa máy |
 
 ## Tech stack
 
@@ -78,7 +80,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 
 ## Quy mô hiện tại
 
-- Khoảng 1.950 dòng code: shim C 821 dòng, extension 833 dòng JS (core 595, overlay 206, extension 32), script cài/gỡ/đóng gói/xem trước khoảng 270 dòng.
+- Khoảng 2.250 dòng code: shim C 1.026 dòng, extension 944 dòng JS (core 703, overlay 206, extension 35), script cài/gỡ/đóng gói/xem trước khoảng 270 dòng.
 - Gói cài 64 KB.
 - Đang chạy trên 1 máy (`luannt-pc`): card NVIDIA GTX 1660, 2 màn hình Dell (DP-2 chính, HDMI-3 phụ).
 - Đã thử: Desktop Sharing (RDP vào phiên đang mở) và Remote Login (RDP khi chưa đăng nhập) đều hoạt động.
@@ -95,15 +97,14 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 - Chỉ chạy trên GNOME Shell 50, phiên Wayland. Bản GNOME khác phải cài với `--force` và tự kiểm tra.
 - Mới thử với card NVIDIA. Card Intel/AMD về lý thuyết chạy được nhưng chưa kiểm chứng.
 - Phụ thuộc bố cục bên trong của libdrm. Bản libdrm khác bố cục thì shim tự tắt và Remote Shield sẽ ngắt mọi phiên remote (an toàn nhưng không remote được).
-- Chuột thật tại chỗ có thể vẫn di chuyển con trỏ (con trỏ bị ẩn trên màn hình thật nhưng người remote có thể thấy nó nhảy). Chưa kiểm chứng.
 - RDP phải ở chế độ chỉ gửi màn hình chính (`mirror-primary`); không hỗ trợ gửi nhiều màn hình.
 - Thay đổi thư viện shim cần đăng xuất rồi đăng nhập lại.
+- Chặn input thật dựa vào libinput (Mutter dùng trên mọi máy Wayland); thiết bị đi đường khác libinput sẽ không bị chặn.
 - Màn che chỉ giống phần chính của màn khóa (hình nền mờ, giờ, ngày, câu gợi ý); chưa vẽ thanh trên cùng (biểu tượng mạng, âm lượng, nguồn) và thông báo của màn khóa thật. Màn che là ảnh tĩnh, đồng hồ cập nhật theo phút.
 - Hình nền chỉ hỗ trợ kiểu hiển thị "zoom" (mặc định); hình nền dạng slideshow XML thì dùng màu nền.
 
 ## Roadmap (tạm dự kiến)
 
-- Kiểm chứng và chặn chuột thật di chuyển con trỏ khi đang remote.
 - Thử trên máy dùng card Intel/AMD.
 - Cân nhắc đóng gói `.deb` nếu cần cài cho nhiều máy, nhiều user.
 

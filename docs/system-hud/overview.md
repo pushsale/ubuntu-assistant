@@ -69,7 +69,7 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
 
 - Khoảng 2.400 dòng: hud.js 1.463 dòng (5 theme), sensors.js 393, core.js 223, các file khác khoảng 330.
 - 5 theme, 6 khối thông tin (header, CPU, RAM, GPU, Disk, Network) + footer.
-- Đang chạy trên 1 máy: theme orbital, màn phụ (HDMI-3), mép trái, rộng 25%, cập nhật 3 giây/lần, hiệu ứng 3 giây ở 30 khung/giây (gnome-shell tốn thêm khoảng 16% một nhân CPU so với hiệu ứng 0,9 giây).
+- Đang chạy trên 1 máy: theme orbital, màn phụ (HDMI-3), mép trái, rộng 25%, cập nhật 3 giây/lần, hiệu ứng 3 giây ở 15 khung/giây (gnome-shell tốn khoảng 31% một nhân CPU; 30 khung/giây tốn khoảng 43% và làm CPU nóng hơn chừng 9°C).
 
 ## Đặc điểm nổi bật
 

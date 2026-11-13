@@ -95,6 +95,48 @@ static struct {
     char last_err[256];
 } S = {.layout_ok = -1, .lock = PTHREAD_MUTEX_INITIALIZER};
 
+/* Trạng thái chặn input thật: xem phần "chặn input thật (libinput)". */
+struct libinput;
+struct libinput_event;
+typedef struct libinput_event *(*li_get_event_fn)(struct libinput *);
+
+#define LI_KEYBOARD_KEY 300
+#define LI_POINTER_BUTTON 402
+#define LI_TOUCH_DOWN 500
+#define LI_TABLET_TOOL_TIP 602
+#define LI_TABLET_TOOL_BUTTON 603
+#define LI_TABLET_PAD_BUTTON 700
+#define LI_FIRST_INPUT 300 /* 3xx phím, 4xx chuột, 5xx cảm ứng, 6xx/7xx bút + bảng vẽ, 8xx cử chỉ */
+#define LI_LAST_INPUT 899  /* 900 công tắc (gập nắp...): luôn cho qua */
+#define INPUT_STALE_MS 6000
+#define INPUT_CHECK_MS 50
+#define CODE_MAX 0x300 /* mã phím / nút evdev (KEY_MAX = 0x2ff) */
+#define KEY_BACKSPACE_ 14
+#define KEY_LEFTCTRL_ 29
+#define KEY_LEFTSHIFT_ 42
+#define KEY_LEFTALT_ 56
+#define KEY_RIGHTSHIFT_ 54
+#define KEY_RIGHTCTRL_ 97
+#define KEY_RIGHTALT_ 100
+
+static struct {
+    pthread_mutex_t lock;
+    int init, ok, blocking;
+    li_get_event_fn real;
+    int (*get_type)(struct libinput_event *);
+    void (*destroy)(struct libinput_event *);
+    void *(*kb_event)(struct libinput_event *);
+    uint32_t (*kb_key)(void *);
+    int (*kb_state)(void *);
+    void *(*ptr_event)(struct libinput_event *);
+    uint32_t (*ptr_button)(void *);
+    int (*ptr_state)(void *);
+    uint64_t last_check_ms, last_report_ms, presses, dropped;
+    uint8_t down[CODE_MAX / 8];      /* đang giữ, Mutter đã thấy lần bấm */
+    uint8_t swallowed[CODE_MAX / 8]; /* đang giữ, lần bấm đã bị bỏ */
+    char flag[512], press[512];
+} IN = {.lock = PTHREAD_MUTEX_INITIALIZER};
+
 static uint64_t now_ms(void)
 {
     struct timespec ts;
@@ -516,10 +558,12 @@ static void write_status(uint64_t now)
     char buf[4096], tmp[600];
     int n = snprintf(buf, sizeof buf,
                      "pid=%d\nlayout_ok=%d\nwant_blank=%d\nguard=%d\nswap_failed=%d\n"
-                     "commits=%llu\nswapped_commits=%llu\nswapped_since_on=%llu\nfails=%llu\nlast_error=%s\n",
+                     "commits=%llu\nswapped_commits=%llu\nswapped_since_on=%llu\nfails=%llu\nlast_error=%s\n"
+                     "input_hook=%d\ninput_blocking=%d\ninput_dropped=%llu\ninput_presses=%llu\n",
                      getpid(), S.layout_ok, S.want, S.guard, S.swap_failed,
                      (unsigned long long)S.total, (unsigned long long)S.swapped,
-                     (unsigned long long)S.swapped_since_on, (unsigned long long)S.fails, S.last_err);
+                     (unsigned long long)S.swapped_since_on, (unsigned long long)S.fails, S.last_err,
+                     IN.ok, IN.blocking, (unsigned long long)IN.dropped, (unsigned long long)IN.presses);
     for (int i = 0; i < MAX_DEVS; i++) {
         struct dev *d = &S.devs[i];
         if (!d->used)
@@ -676,6 +720,164 @@ __attribute__((visibility("default"))) int drmModeAtomicCommit(int fd, struct at
     return ret;
 }
 
+/* ---------- chặn input thật (libinput) ----------
+ *
+ * Mutter đọc bàn phím / chuột / touchpad thật qua libinput (trong luồng input riêng). Thiết bị ảo của
+ * phiên remote (RDP) đi đường khác (ClutterVirtualInputDevice), không qua libinput.
+ * Không chặn được bằng bộ lọc sự kiện Clutter trong extension: bộ lọc của Mutter được đăng ký trước,
+ * giao phím / chuột thẳng cho cửa sổ app rồi dừng, bộ lọc thêm sau chỉ thấy sự kiện rơi vào giao diện shell.
+ *
+ * Khi có file $RUN/input-block (extension tạo lúc kéo rèm, ghi lại mỗi 2 s):
+ *   - bỏ mọi sự kiện phím, chuột, cuộn, cảm ứng, bút, cử chỉ từ thiết bị thật (con trỏ thật cũng đứng yên);
+ *   - mỗi lần bấm phím / nút: ghi $RUN/local-press ("<số lần bấm> <1 nếu Ctrl+Alt+Shift+Backspace>")
+ *     để extension ngắt remote (localTakeover).
+ * Nhả phím / nút: chỉ bỏ khi lần bấm tương ứng đã bị bỏ, để Mutter không bao giờ thấy phím bị kẹt.
+ * File cờ không được ghi lại quá INPUT_STALE_MS (extension chết, JS của gnome-shell treo) -> thôi chặn. */
+
+
+static int bit_get(const uint8_t *b, uint32_t c) { return (b[c >> 3] >> (c & 7)) & 1; }
+static void bit_set(uint8_t *b, uint32_t c) { b[c >> 3] |= (uint8_t)(1u << (c & 7)); }
+static void bit_clr(uint8_t *b, uint32_t c) { b[c >> 3] &= (uint8_t)~(1u << (c & 7)); }
+static int held(uint32_t c) { return bit_get(IN.down, c) || bit_get(IN.swallowed, c); }
+
+static void input_init(void)
+{
+    IN.init = 1;
+    IN.real = (li_get_event_fn)dlsym(RTLD_NEXT, "libinput_get_event");
+    IN.get_type = (int (*)(struct libinput_event *))dlsym(RTLD_DEFAULT, "libinput_event_get_type");
+    IN.destroy = (void (*)(struct libinput_event *))dlsym(RTLD_DEFAULT, "libinput_event_destroy");
+    IN.kb_event = (void *(*)(struct libinput_event *))dlsym(RTLD_DEFAULT, "libinput_event_get_keyboard_event");
+    IN.kb_key = (uint32_t (*)(void *))dlsym(RTLD_DEFAULT, "libinput_event_keyboard_get_key");
+    IN.kb_state = (int (*)(void *))dlsym(RTLD_DEFAULT, "libinput_event_keyboard_get_key_state");
+    IN.ptr_event = (void *(*)(struct libinput_event *))dlsym(RTLD_DEFAULT, "libinput_event_get_pointer_event");
+    IN.ptr_button = (uint32_t (*)(void *))dlsym(RTLD_DEFAULT, "libinput_event_pointer_get_button");
+    IN.ptr_state = (int (*)(void *))dlsym(RTLD_DEFAULT, "libinput_event_pointer_get_button_state");
+    IN.ok = S.active && IN.flag[0] && IN.real && IN.get_type && IN.destroy && IN.kb_event && IN.kb_key &&
+            IN.kb_state && IN.ptr_event && IN.ptr_button && IN.ptr_state;
+    if (S.active) {
+        logf_(IN.ok ? "chặn input: đã gắn vào libinput của gnome-shell"
+                    : "chặn input: thiếu hàm libinput -> không chặn được input thật");
+        S.need_status = 1;
+    }
+}
+
+/* Có file cờ và file được ghi lại gần đây. */
+static int input_flag_fresh(void)
+{
+    struct stat st;
+    if (stat(IN.flag, &st) != 0)
+        return 0;
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    int64_t age = (int64_t)(ts.tv_sec - st.st_mtim.tv_sec) * 1000 + (ts.tv_nsec - st.st_mtim.tv_nsec) / 1000000;
+    return age > -2000 && age < INPUT_STALE_MS;
+}
+
+static void input_update(uint64_t now)
+{
+    if (now - IN.last_check_ms < INPUT_CHECK_MS)
+        return;
+    IN.last_check_ms = now;
+    int b = input_flag_fresh();
+    if (b == IN.blocking)
+        return;
+    IN.blocking = b;
+    S.need_status = 1;
+    if (b)
+        logf_("BẬT chặn input thật (bàn phím, chuột tại máy)");
+    else
+        logf_("TẮT chặn input thật%s", access(IN.flag, F_OK) == 0 ? " (file cờ quá cũ: extension không còn ghi lại)" : "");
+}
+
+static void input_report(uint32_t code, uint64_t now)
+{
+    IN.presses++;
+    int combo = code == KEY_BACKSPACE_ && (held(KEY_LEFTCTRL_) || held(KEY_RIGHTCTRL_)) &&
+                (held(KEY_LEFTALT_) || held(KEY_RIGHTALT_)) && (held(KEY_LEFTSHIFT_) || held(KEY_RIGHTSHIFT_));
+    if (!combo && now - IN.last_report_ms < 200)
+        return;
+    IN.last_report_ms = now;
+    char buf[64];
+    int n = snprintf(buf, sizeof buf, "%llu %d\n", (unsigned long long)IN.presses, combo);
+    int fd = open(IN.press, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0600);
+    if (fd < 0)
+        return;
+    if (write(fd, buf, (size_t)n) < 0) { /* bỏ qua */ }
+    close(fd);
+}
+
+/* 1 = bỏ sự kiện. */
+static int input_drop(struct libinput_event *ev, uint64_t now)
+{
+    int type = IN.get_type(ev);
+    if (type < LI_FIRST_INPUT || type > LI_LAST_INPUT)
+        return 0;
+    int64_t code = -1;
+    int pressed = 0;
+    if (type == LI_KEYBOARD_KEY) {
+        void *k = IN.kb_event(ev);
+        if (k) {
+            code = IN.kb_key(k);
+            pressed = IN.kb_state(k) == 1;
+        }
+    } else if (type == LI_POINTER_BUTTON) {
+        void *p = IN.ptr_event(ev);
+        if (p) {
+            code = IN.ptr_button(p);
+            pressed = IN.ptr_state(p) == 1;
+        }
+    }
+    if (code >= 0 && code < CODE_MAX) {
+        uint32_t c = (uint32_t)code;
+        if (pressed) {
+            if (IN.blocking) {
+                bit_set(IN.swallowed, c);
+                input_report(c, now);
+                return 1;
+            }
+            bit_set(IN.down, c);
+            return 0;
+        }
+        if (bit_get(IN.swallowed, c)) {
+            bit_clr(IN.swallowed, c);
+            return 1;
+        }
+        bit_clr(IN.down, c);
+        return 0;
+    }
+    if (!IN.blocking)
+        return 0;
+    if (type == LI_TOUCH_DOWN || type == LI_TABLET_TOOL_TIP || type == LI_TABLET_TOOL_BUTTON ||
+        type == LI_TABLET_PAD_BUTTON)
+        input_report(0, now);
+    return 1;
+}
+
+__attribute__((visibility("default"))) struct libinput_event *libinput_get_event(struct libinput *li)
+{
+    pthread_mutex_lock(&IN.lock);
+    if (!IN.init)
+        input_init();
+    pthread_mutex_unlock(&IN.lock);
+    if (!IN.real)
+        return NULL;
+    for (;;) {
+        struct libinput_event *ev = IN.real(li);
+        if (!ev || !IN.ok)
+            return ev;
+        pthread_mutex_lock(&IN.lock);
+        uint64_t now = now_ms();
+        input_update(now);
+        int drop = input_drop(ev, now);
+        if (drop)
+            IN.dropped++;
+        pthread_mutex_unlock(&IN.lock);
+        if (!drop)
+            return ev;
+        IN.destroy(ev);
+    }
+}
+
 /* ---------- khởi tạo ---------- */
 
 static void strip_preload(void)
@@ -742,7 +944,10 @@ __attribute__((constructor)) static void shim_init(void)
     snprintf(S.overlay, sizeof S.overlay, "%s/shield.png", dir);
     snprintf(S.rundir, sizeof S.rundir, "%s", dir);
     snprintf(S.gen, sizeof S.gen, "%s/shield.gen", dir);
+    snprintf(IN.flag, sizeof IN.flag, "%s/input-block", dir);
+    snprintf(IN.press, sizeof IN.press, "%s/local-press", dir);
     unlink(S.flag); /* phiên mới luôn bắt đầu ở trạng thái bình thường */
+    unlink(IN.flag);
     if (access(disabled, F_OK) == 0) {
         logf_("pid %d: có %s -> không hoạt động", getpid(), disabled);
         return;

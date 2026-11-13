@@ -3,13 +3,14 @@
 #   shieldctl status        trạng thái thư viện trong gnome-shell
 #   shieldctl log [n]       n dòng log cuối (mặc định 30)
 #   shieldctl test [giây]   phủ trắng màn hình vật lý trong N giây (mặc định 15) rồi tự trả lại
-#   shieldctl on | off      bật / tắt thủ công (off luôn an toàn để gõ mù)
+#   shieldctl on | off      bật / tắt thủ công (off luôn an toàn để gõ mù; off cũng trả bàn phím, chuột thật)
 #   shieldctl reset-guard   gỡ khoá an toàn sau sự cố
 set -uo pipefail
 
 RUN="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/remote-shield"
 CACHE="$HOME/.cache/remote-shield"
 FLAG="$RUN/blank"
+INPUT_FLAG="$RUN/input-block"
 STATUS="$RUN/shim-status"
 LOG="$CACHE/shim.log"
 MARKER="$CACHE/shim-blanking.marker"
@@ -24,7 +25,7 @@ case "${1:-status}" in
   on)
     mkdir -p "$RUN"; touch "$FLAG"; sleep 0.2; nudge "Bật màn che" ;;
   off)
-    rm -f "$FLAG"; sleep 0.2; nudge "Tắt màn che" ;;
+    rm -f "$FLAG" "$INPUT_FLAG"; sleep 0.2; nudge "Tắt màn che" ;;
   test)
     secs="${2:-15}"
     if ! loaded; then echo "gnome-shell chưa nạp shield-shim (cần đăng xuất/đăng nhập sau khi cài)."; exit 1; fi
@@ -42,6 +43,7 @@ case "${1:-status}" in
   status)
     if loaded; then echo "shield-shim: ĐÃ nạp trong gnome-shell"; else echo "shield-shim: chưa nạp trong gnome-shell"; fi
     [ -f "$FLAG" ] && echo "cờ màn che: BẬT" || echo "cờ màn che: tắt"
+    [ -f "$INPUT_FLAG" ] && echo "cờ chặn input thật: BẬT" || echo "cờ chặn input thật: tắt"
     [ -f "$MARKER" ] && echo "file guard: có ($MARKER)"
     [ -f "$STATUS" ] && { echo "--- $STATUS"; cat "$STATUS"; } ;;
   log)
