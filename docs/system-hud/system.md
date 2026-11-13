@@ -240,7 +240,9 @@ gjs -m tools/preview.js /tmp/hud-preview 10
 
 Trạng thái runtime (2026-11-13):
 - Đã cài `system-hud@ubuntu-assistant` và bật trong danh sách.
-- Shell đang chạy vẫn là bản tên cũ (`scifi-hud`) tới lần đăng nhập sau. Sau khi đăng nhập lại, chạy `./install.sh` một lần để gỡ UUID cũ khỏi `enabled-extensions`.
+- Shell đang chạy vẫn là bản tên cũ (`scifi-hud`) tới lần đăng nhập sau.
+- Thư mục cũ đang là bản tạm (code mới, `shell-version: ["0"]`).
+- Sau khi đăng nhập lại, chạy `./install.sh` một lần để gỡ UUID cũ khỏi `enabled-extensions` và xoá thư mục cũ.
 - Cấu hình: orbital, màn phụ HDMI-3, mép trái.
 
 ## 13. Architectural Decisions & Rationale
@@ -268,6 +270,7 @@ Trạng thái runtime (2026-11-13):
 | HUD (và menu Ubuntu) nhảy sang màn khác | Màn chính bị đổi (monitors.xml lưu lại sau khi một màn mất tín hiệu thoáng qua); `monitor: secondary` tính theo màn chính | Đặt lại màn chính (DP-2) trong Settings → Displays hoặc qua `ApplyMonitorsConfig` |
 | HUD bị hình nền che sau khi đổi wallpaper | Actor nền mới được thêm lên trên | Đã xử lý bằng `child-added` → `_raise()` |
 | Đổi UUID: HUD mới không hiện ngay | Wayland không nạp extension mới khi shell đang chạy | Đăng xuất / đăng nhập; bản cũ vẫn chạy tới lúc đó |
+| HUD biến mất sau khi đổi tên, log `ImportError … scifi-hud@ubuntu-assistant/core.js` | `install.sh` bản đầu xoá thư mục UUID cũ ngay; khi gỡ extension Allow Locked Remote Desktop, GNOME tắt rồi bật lại các extension đứng sau nó, bản cũ không còn file để nạp | Chỉ xoá thư mục cũ khi bản mới đã ACTIVE (`drop_old_uuid`). Đã khôi phục tạm thư mục cũ (đặt `shell-version: ["0"]` để lần đăng nhập sau GNOME bỏ qua, tránh 2 HUD) |
 | Gauge orbital rối mắt | Quá nhiều chi tiết trang trí | Đã bỏ thước vạch và cung xoay (2026-11-12); không thêm lại khi chưa hỏi |
 | Log có `JS ERROR … grabbedsOldRect` | Lỗi của extension tiling-assistant | Không liên quan HUD |
 

@@ -10,20 +10,26 @@ EXT_ROOT="$HOME/.local/share/gnome-shell/extensions"
 
 # Đổi tên 2026-11-13: Sci-Fi HUD (scifi-hud@ubuntu-assistant) -> System HUD. Mang cấu hình cũ sang.
 # Bản cũ vẫn chạy trong bộ nhớ tới khi đăng xuất (trên Wayland shell chưa nạp được UUID mới),
-# nên chỉ gỡ nó khỏi danh sách bật khi bản mới đã ACTIVE (xem cuối file).
+# nên chỉ gỡ nó (khỏi danh sách bật và xoá thư mục) khi bản mới đã ACTIVE (xem cuối file).
+# Không được xoá thư mục cũ sớm: GNOME có thể tắt/bật lại bản cũ bất cứ lúc nào (vd. khi một extension
+# đứng trước nó trong danh sách bị tắt) và lúc đó bản cũ không còn file để nạp -> HUD biến mất.
 OLD_UUID="scifi-hud@ubuntu-assistant"
 mkdir -p "$DEST"
-if [ -d "$EXT_ROOT/$OLD_UUID" ]; then
-    [ -f "$DEST/config.json" ] || cp "$EXT_ROOT/$OLD_UUID/config.json" "$DEST/" 2>/dev/null || true
-    rm -rf "${EXT_ROOT:?}/$OLD_UUID"
-    echo "Đã chuyển cấu hình từ $OLD_UUID sang $UUID và xoá thư mục cũ."
+if [ -d "$EXT_ROOT/$OLD_UUID" ] && [ ! -f "$DEST/config.json" ]; then
+    cp "$EXT_ROOT/$OLD_UUID/config.json" "$DEST/" 2>/dev/null || true
+    echo "Đã chuyển cấu hình từ $OLD_UUID sang $UUID."
 fi
 drop_old_uuid() {
     local current new
     current=$(gsettings get org.gnome.shell enabled-extensions)
-    [[ "$current" == *"$OLD_UUID"* ]] || return 0
-    new=$(python3 -c "import ast,sys; print(str([x for x in ast.literal_eval(sys.argv[1].replace('@as ','')) if x!=sys.argv[2]]))" "$current" "$OLD_UUID")
-    gsettings set org.gnome.shell enabled-extensions "$new"
+    if [[ "$current" == *"$OLD_UUID"* ]]; then
+        new=$(python3 -c "import ast,sys; print(str([x for x in ast.literal_eval(sys.argv[1].replace('@as ','')) if x!=sys.argv[2]]))" "$current" "$OLD_UUID")
+        gsettings set org.gnome.shell enabled-extensions "$new"
+    fi
+    if [ -d "$EXT_ROOT/$OLD_UUID" ]; then
+        rm -rf "${EXT_ROOT:?}/$OLD_UUID"
+        echo "Đã gỡ bản tên cũ $OLD_UUID."
+    fi
 }
 
 cp "$SRC"/{metadata.json,extension.js,core.js,sensors.js,hud.js,animator.js} "$DEST"/
