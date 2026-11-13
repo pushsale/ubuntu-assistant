@@ -74,12 +74,11 @@ Nhóm này chỉ kiểm tra và sửa nếu cần. **Mạng lỗi thì dừng to
 
 ## 8. Soạn thảo văn bản (thay Notepad++)
 
-Notepad++ không có bản chính thức cho Linux (chỉ Windows). Hai cách:
+Notepad++ không có bản cho Linux (chỉ Windows), nên dùng Notepad Next thay thế.
 
 | Tên | Mục đích | Cài | Kiểm tra | Yêu cầu | Ghi chú | Trạng thái |
 |---|---|---|---|---|---|---|
 | notepadnext | Viết lại Notepad++ chạy thẳng trên Linux, giao diện và phím tắt gần như Notepad++ | `snap: notepadnext --classic` | `snap list notepadnext` | | Khuyên dùng | cài |
-| notepad-plus-plus | Notepad++ bản Windows thật, chạy qua Wine | `snap: notepad-plus-plus` | `snap list notepad-plus-plus` | x86_64 | **hỏi trước**. Snap cộng đồng (không phải của tác giả Notepad++), khởi động chậm, plugin Windows có thể lỗi. Chỉ cài khi Notepad Next thiếu thứ người dùng cần | cài |
 
 ## 9. Cơ sở dữ liệu
 

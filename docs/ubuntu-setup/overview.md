@@ -58,7 +58,7 @@ Ubuntu Setup là danh sách công cụ và thiết lập cần có khi chuyển 
 
 ## Quy mô hiện tại
 
-- 3 file trong `ubuntu-setup/`. Danh sách theo thứ tự người dùng chọn: kiểm tra mạng, card màn hình → phím tắt kiểu Windows (Windows + S tìm kiếm; Terminal Ctrl+C copy, Ctrl+V paste, Ctrl+Shift+C dừng lệnh) → gõ tiếng Việt → Chrome → Remote Shield + Desktop Sharing + Remote Control (Remote Login hỏi trước) → OnlyOffice (LibreOffice nếu chưa đủ) → Remmina, RustDesk → Notepad Next (thay Notepad++) → DBeaver. 2 mục nhóm Claude (chỉ kiểm tra), 21 mục `cài` (4 mục `hỏi trước`), 1 mục `đề xuất`.
+- 3 file trong `ubuntu-setup/`. Danh sách theo thứ tự người dùng chọn: kiểm tra mạng, card màn hình → phím tắt kiểu Windows (Windows + S tìm kiếm; Terminal Ctrl+C copy, Ctrl+V paste, Ctrl+Shift+C dừng lệnh) → gõ tiếng Việt → Chrome → Remote Shield + Desktop Sharing + Remote Control (Remote Login hỏi trước) → OnlyOffice (LibreOffice nếu chưa đủ) → Remmina, RustDesk → Notepad Next (thay Notepad++) → DBeaver. 2 mục nhóm Claude (chỉ kiểm tra), 20 mục `cài` (3 mục `hỏi trước`), 1 mục `đề xuất`.
 - Chưa chạy thử trên máy mới.
 
 ## Đặc điểm nổi bật

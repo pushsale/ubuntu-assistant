@@ -65,7 +65,7 @@ Mỗi nhóm `## <số>. <tên>` là một bảng 7 cột:
 | Ghi chú | `hỏi trước`, nguồn ngoài (PPA...), việc người dùng tự làm |
 | Trạng thái | `cài` / `bỏ` / `đề xuất` |
 
-Nhóm hiện có (thứ tự người dùng chọn 2026-11-13): 0 Claude (chỉ kiểm tra), 1 Kiểm tra máy (mạng, card màn hình; mạng lỗi thì dừng toàn bộ), 2 Phím tắt kiểu Windows, 3 Gõ tiếng Việt, 4 Trình duyệt (Chrome), 5 Remote (Remote Shield, Desktop Sharing, Remote Control; Remote Login `hỏi trước`), 6 Văn phòng (OnlyOffice; LibreOffice `hỏi trước`), 7 Remote sang máy khác (Remmina, RustDesk), 8 Soạn thảo (Notepad Next; Notepad++ qua Wine `hỏi trước`), 9 Cơ sở dữ liệu (DBeaver), 10 Đề xuất khác, 11 Người dùng bổ sung.
+Nhóm hiện có (thứ tự người dùng chọn 2026-11-13): 0 Claude (chỉ kiểm tra), 1 Kiểm tra máy (mạng, card màn hình; mạng lỗi thì dừng toàn bộ), 2 Phím tắt kiểu Windows, 3 Gõ tiếng Việt, 4 Trình duyệt (Chrome), 5 Remote (Remote Shield, Desktop Sharing, Remote Control; Remote Login `hỏi trước`), 6 Văn phòng (OnlyOffice; LibreOffice `hỏi trước`), 7 Remote sang máy khác (Remmina, RustDesk), 8 Soạn thảo (Notepad Next thay Notepad++; không chạy Notepad++ qua Wine), 9 Cơ sở dữ liệu (DBeaver), 10 Đề xuất khác, 11 Người dùng bổ sung.
 
 Nguồn ngoài kho Ubuntu đã được người dùng duyệt: PPA `bamboo-engine/ibus-bamboo`, `.deb` Chrome của Google (`dl.google.com`, tự thêm kho apt), `.deb` RustDesk từ GitHub `rustdesk/rustdesk` (lấy qua API releases/latest; không tự cập nhật). Đã kiểm tra 2026-11-13: URL Chrome trả 200; bản RustDesk mới nhất 1.5.3 có tài sản `rustdesk-1.5.3-x86_64.deb`.
 
