@@ -15,6 +15,7 @@ Mỗi thư mục có `overview.md` (cho người không đọc code) và `system
 
 | File | Mục đích |
 |---|---|
+| `README.md` (gốc repo, không nằm ở `docs/`) | Hướng dẫn cài / dùng / gỡ cả hai extension cho người ngoài (repo public); sửa cách cài thì cập nhật cùng lúc |
 | `remote-shield/packaging/README.txt` (trong mã nguồn, không nằm ở `docs/`) | Hướng dẫn cài cho người dùng cuối, được chép vào gói `remote-shield-<phiên bản>.tar.gz` |
 
 ## Quan hệ giữa các feature
