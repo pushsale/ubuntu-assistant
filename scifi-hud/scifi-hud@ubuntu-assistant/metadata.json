@@ -1,0 +1,7 @@
+{
+  "uuid": "scifi-hud@ubuntu-assistant",
+  "name": "Sci-Fi HUD",
+  "description": "Bảng theo dõi CPU, RAM, GPU, Disk, Network vẽ thẳng lên desktop, nằm dưới mọi cửa sổ.",
+  "shell-version": ["50"],
+  "version-name": "1.0"
+}

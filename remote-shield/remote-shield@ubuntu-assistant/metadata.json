@@ -1,0 +1,13 @@
+{
+  "uuid": "remote-shield@ubuntu-assistant",
+  "name": "Remote Shield",
+  "description": "Khi có phiên Remote Desktop (RDP): màn hình thật chuyển trắng (qua shield-shim) và chặn chuột/bàn phím tại chỗ; người remote vẫn thấy và điều khiển desktop bình thường. Khi ngắt kết nối: khóa máy rồi trả lại màn hình.",
+  "shell-version": [
+    "50"
+  ],
+  "session-modes": [
+    "user",
+    "unlock-dialog"
+  ],
+  "version-name": "2.0"
+}

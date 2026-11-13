@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Điều khiển shield-shim (thư viện che màn hình của Remote Shield).
+#   shieldctl status        trạng thái thư viện trong gnome-shell
+#   shieldctl log [n]       n dòng log cuối (mặc định 30)
+#   shieldctl test [giây]   phủ trắng màn hình vật lý trong N giây (mặc định 15) rồi tự trả lại
+#   shieldctl on | off      bật / tắt thủ công (off luôn an toàn để gõ mù)
+#   shieldctl reset-guard   gỡ khoá an toàn sau sự cố
+set -uo pipefail
+
+RUN="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/remote-shield"
+CACHE="$HOME/.cache/remote-shield"
+FLAG="$RUN/blank"
+STATUS="$RUN/shim-status"
+LOG="$CACHE/shim.log"
+MARKER="$CACHE/shim-blanking.marker"
+
+# Mutter chỉ gửi khung mới khi màn hình có thay đổi; một thông báo nhỏ buộc nó vẽ lại
+# để việc bật/tắt có hiệu lực ngay.
+nudge() { notify-send -a "Remote Shield" -t 2000 -e "Remote Shield" "$1" 2>/dev/null || true; }
+
+loaded() { grep -q "shield-shim.so" "/proc/$(pgrep -u "$(id -u)" -x gnome-shell | head -1)/maps" 2>/dev/null; }
+
+case "${1:-status}" in
+  on)
+    mkdir -p "$RUN"; touch "$FLAG"; sleep 0.2; nudge "Bật màn che" ;;
+  off)
+    rm -f "$FLAG"; sleep 0.2; nudge "Tắt màn che" ;;
+  test)
+    secs="${2:-15}"
+    if ! loaded; then echo "gnome-shell chưa nạp shield-shim (cần đăng xuất/đăng nhập sau khi cài)."; exit 1; fi
+    start=$(date +%s)
+    echo "Màn hình vật lý sẽ trắng trong ${secs}s rồi tự trở lại."
+    echo "Trong lúc trắng: bấm Shift+Print để GNOME chụp màn hình (chính nguồn hình RDP dùng)."
+    trap 'rm -f "$FLAG"; nudge "Tắt màn che"' EXIT INT TERM
+    mkdir -p "$RUN"; touch "$FLAG"; sleep 0.2; nudge "Màn che bật trong ${secs}s"
+    for ((i = secs; i > 0; i--)); do printf '\r  còn %2ds ' "$i"; sleep 1; done; echo
+    rm -f "$FLAG"; sleep 0.2; nudge "Tắt màn che"; trap - EXIT INT TERM
+    echo "Đã trả lại màn hình."
+    shots=$(find "$(xdg-user-dir PICTURES)/Screenshots" -maxdepth 1 -name '*.png' -newermt "@$start" 2>/dev/null)
+    [ -n "$shots" ] && { echo "Ảnh chụp trong lúc màn trắng:"; echo "$shots"; }
+    echo; "$0" status ;;
+  status)
+    if loaded; then echo "shield-shim: ĐÃ nạp trong gnome-shell"; else echo "shield-shim: chưa nạp trong gnome-shell"; fi
+    [ -f "$FLAG" ] && echo "cờ màn che: BẬT" || echo "cờ màn che: tắt"
+    [ -f "$MARKER" ] && echo "file guard: có ($MARKER)"
+    [ -f "$STATUS" ] && { echo "--- $STATUS"; cat "$STATUS"; } ;;
+  log)
+    tail -n "${2:-30}" "$LOG" 2>/dev/null || echo "Chưa có log ($LOG)." ;;
+  reset-guard)
+    rm -f "$MARKER"; echo "Đã gỡ guard. Bật lại cờ để thử." ;;
+  *)
+    sed -n '2,9p' "$0"; exit 1 ;;
+esac

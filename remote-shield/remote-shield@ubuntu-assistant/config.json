@@ -1,0 +1,10 @@
+{
+  "blockInput": true,
+  "lockOnDisconnect": true,
+  "matchAllRemote": false,
+  "failClosed": true,
+  "verifyMs": 4000,
+  "message": "Máy tính đang được điều khiển từ xa",
+  "submessage": "Màn hình, bàn phím và chuột tại chỗ tạm thời bị vô hiệu hoá",
+  "gatherWindows": true
+}

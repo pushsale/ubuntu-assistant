@@ -1,0 +1,10 @@
+{
+  "theme": "orbital",
+  "monitor": "primary",
+  "side": "left",
+  "widthFraction": 0.25,
+  "gap": 12,
+  "intervalMs": 3000,
+  "animMs": 900,
+  "fps": 30
+}
