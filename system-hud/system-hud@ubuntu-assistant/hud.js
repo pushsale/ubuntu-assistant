@@ -1239,8 +1239,8 @@ const card = (() => {
             t(cr, value, cx, sy + 15, {size: 13, weight: 'Medium', align: 'center'});
         };
         cell(0, 'Power', g.power === null ? '--' : `${g.power.toFixed(0)} / ${g.powerLimit?.toFixed(0) ?? '--'} W`);
-        cell(1, 'Fan', g.fan === null ? '--' : `${g.fan} %`);
-        cell(2, 'Clock', g.clock === null ? '--' : `${g.clock} MHz`);
+        cell(1, 'Fan', g.fan === null ? '--' : `${Math.round(g.fan)} %`);
+        cell(2, 'Clock', g.clock === null ? '--' : `${Math.round(g.clock)} MHz`);
         t(cr, g.name, x + w / 2, y + h - 22, {size: 11, color: c.gray, align: 'center'});
     }
 
@@ -1358,9 +1358,9 @@ function drawGpu(cr, T, s, x, y, w) {
     ry += 21;
     T.stat(cr, rx, ry, rw, 'POWER', g.power === null ? '--' : `${g.power.toFixed(0)} / ${g.powerLimit?.toFixed(0) ?? '--'} W`);
     ry += 21;
-    T.stat(cr, rx, ry, rw, 'FAN', g.fan === null ? '--' : `${g.fan}%`);
+    T.stat(cr, rx, ry, rw, 'FAN', g.fan === null ? '--' : `${Math.round(g.fan)}%`);
     ry += 21;
-    T.stat(cr, rx, ry, rw, 'CLOCK', g.clock === null ? '--' : `${g.clock} MHz`);
+    T.stat(cr, rx, ry, rw, 'CLOCK', g.clock === null ? '--' : `${Math.round(g.clock)} MHz`);
     ry += 26;
     T.stat(cr, rx, ry, rw, 'VRAM', `${(g.memUsed / 2 ** 30).toFixed(1)} / ${(g.memTotal / 2 ** 30).toFixed(1)} GB`);
     ry += 20;

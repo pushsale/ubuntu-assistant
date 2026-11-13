@@ -7,7 +7,7 @@
 Remote Shield gồm 2 phần chạy trong cùng tiến trình `gnome-shell` của user:
 
 - **Extension** `remote-shield@ubuntu-assistant` (GJS). Nghe phiên remote từ Mutter, ra lệnh che, chặn input thật, dồn cửa sổ, khoá máy khi ngắt và kiểm tra an toàn.
-- **shield-shim.so** (C, LD_PRELOAD). Thay hàm `drmModeAtomicCommit` của libdrm: khi có cờ che, đổi `FB_ID` của mọi plane thành framebuffer trắng do shim tự tạo, rồi mới gửi xuống driver.
+- **shield-shim.so** (C, LD_PRELOAD). Thay hàm `drmModeAtomicCommit` của libdrm: khi có cờ che, đổi `FB_ID` của mọi plane thành framebuffer màn che do shim tự tạo (ảnh giống màn khóa do extension vẽ), rồi mới gửi xuống driver.
 
 Hai phần nói chuyện qua file trong `$XDG_RUNTIME_DIR/remote-shield/`, không dùng D-Bus.
 
@@ -54,11 +54,11 @@ gnome-shell ─ MetaRemoteAccessController ── 'new-handle' ──► ShieldC
    │                │                                         │
    │                ▼                                         ▼
    │   meta_kms ── drmModeAtomicCommit(req) ──► shield-shim (đọc cờ mỗi ≤100 ms)
-   │                                              │ đổi FB_ID plane → FB trắng/ trong suốt (cursor)
+   │                                              │ đổi FB_ID plane → FB màn che / trong suốt (cursor)
    │                                              │ gọi hàm thật ── lỗi? → khôi phục, gửi lại khung gốc, swap_failed=1
    │                                              │ ghi $RUN/shim-status (swapped_since_on, ...)
    │                                              ▼
-   │                                      nvidia-drm ──► màn hình thật: trắng + ảnh chữ
+   │                                      nvidia-drm ──► màn hình thật: giống màn khóa
    │
    └─ _verify() đọc shim-status mỗi 250 ms ─ OK ─► _watch() mỗi 2 s
                                          └ quá verifyMs hoặc lỗi ─► _fail(): stop handle + _disengage(lock)
@@ -79,18 +79,20 @@ Vì sao RDP không bị che: gnome-remote-desktop lấy ảnh từ stage của M
 |---|---|
 | Nạp core.js kèm `?v=<Date.now()>` (bỏ qua cache ESM) | [extension.js:9](../../remote-shield/remote-shield@ubuntu-assistant/extension.js) |
 | Nạp overlay.js cùng mã phiên bản | [core.js:22](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Phiên headless (Remote Login) → không làm gì | [core.js:102](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| enable: đọc config, xoá cờ, vẽ `shield.png`, nghe `new-handle` | [core.js:107-128](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Nhận diện phiên remote | `_isRemote` [core.js:251](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Theo dõi handle, `stopped` → `_sync` | [core.js:258-279](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Kéo rèm | `_engage` [core.js:293](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Chờ xác nhận / theo dõi | `_verify` [core.js:308](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_watch` [core.js:336](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_shimProblem` [core.js:351](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Fail-closed | `_fail` [core.js:364](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Mở rèm (khoá trước, 800 ms sau mới xoá cờ) | `_disengage` [core.js:376](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Dồn / trả cửa sổ | `_gatherWindows` [core.js:405](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreWindows` [core.js:437](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Cho remote khi màn hình khóa (thay hàm inhibit/uninhibit của controller) | `_allowLockedRemote` [core.js:200](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreLockedRemote` [core.js:230](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Chặn input + phím khẩn cấp Ctrl+Alt+Shift+Backspace | `_filter` [core.js:473](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Vẽ ảnh chữ 1400×320 (Pango/Cairo) | [overlay.js](../../remote-shield/remote-shield@ubuntu-assistant/overlay.js) |
+| Phiên headless (Remote Login) → không làm gì | [core.js:108](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| enable: đọc config, xoá cờ, vẽ sẵn ảnh màn che (làm mờ hình nền), nghe `new-handle` | [core.js:113-134](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Nhận diện phiên remote | `_isRemote` [core.js:334](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Theo dõi handle, `stopped` → `_sync` | [core.js:341-362](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Kéo rèm | `_engage` [core.js:376](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Chờ xác nhận / theo dõi | `_verify` [core.js:393](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_watch` [core.js:421](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_shimProblem` [core.js:436](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Fail-closed | `_fail` [core.js:449](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Mở rèm (khoá trước, 800 ms sau mới xoá cờ) | `_disengage` [core.js:461](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Dồn / trả cửa sổ | `_gatherWindows` [core.js:497](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreWindows` [core.js:529](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Cho remote khi màn hình khóa (thay hàm inhibit/uninhibit của controller) | `_allowLockedRemote` [core.js:283](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreLockedRemote` [core.js:313](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Vẽ ảnh màn che cho từng kích thước màn hình, đổi `shield.gen` | `_renderShield` [core.js:208](../../remote-shield/remote-shield@ubuntu-assistant/core.js); đồng hồ chạy: `_scheduleClock` [core.js:244](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Người tại máy bấm → ngắt remote, khóa, hiện ô mật khẩu | `_localTakeover` [core.js:264](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Chặn input thật; bấm chuột/phím/chạm → `_localTakeover` (tắt `localTakeover` thì chỉ Ctrl+Alt+Shift+Backspace) | `_filter` [core.js:565](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Vẽ ảnh giống màn khóa: hình nền zoom → thu 1/8 → Gauss sigma 45/8 → sáng 0.65 → phóng lại; giờ/ngày/gợi ý (Pango/Cairo) | `ShieldPainter` [overlay.js](../../remote-shield/remote-shield@ubuntu-assistant/overlay.js) |
 
 Quy tắc nhận diện (`_isRemote`): handle có GType chứa `RemoteDesktop`, hoặc `disable_animations = true`, hoặc config `matchAllRemote`. Một kết nối RDP sinh 2 handle: `MetaScreenCastSessionHandle` (disable-animations=true) và `MetaRemoteDesktopSessionHandle` (false). Chia sẻ màn hình khi họp trực tuyến không khớp quy tắc nên không bị che.
 
@@ -111,21 +113,22 @@ Dồn cửa sổ: chỉ lấy loại NORMAL, DIALOG, MODAL_DIALOG, UTILITY; bỏ
 
 | Bước | Code |
 |---|---|
-| Constructor: bỏ mình khỏi LD_PRELOAD, chỉ chạy khi `comm == gnome-shell`, xoá cờ cũ, kill switch, guard | `shim_init` [shield-shim.c:662](../../remote-shield/shim/shield-shim.c) |
-| Destructor: xoá marker (thoát bình thường không tính là sự cố) | `shim_fini` [shield-shim.c:704](../../remote-shield/shim/shield-shim.c) |
-| Hook giao khung | `drmModeAtomicCommit` [shield-shim.c:520](../../remote-shield/shim/shield-shim.c) |
-| Kiểm tra bố cục `drmModeAtomicReq` lúc chạy | `check_layout` [shield-shim.c:411](../../remote-shield/shim/shield-shim.c) |
-| Đọc cờ, bật/tắt, marker/guard | `update_want` [shield-shim.c:437](../../remote-shield/shim/shield-shim.c) |
-| Ghi trạng thái (nguyên tử: .tmp rồi rename) | `write_status` [shield-shim.c:467](../../remote-shield/shim/shield-shim.c) |
-| Liệt kê plane, thuộc tính FB_ID/CRTC/SRC_*, cursor cap | `load_planes` [shield-shim.c:169](../../remote-shield/shim/shield-shim.c), `get_dev` [shield-shim.c:213](../../remote-shield/shim/shield-shim.c) |
-| Tạo dumb buffer + framebuffer (trắng XRGB8888 / trong suốt ARGB8888), cache theo kích thước | `create_fb` [shield-shim.c:292](../../remote-shield/shim/shield-shim.c), `get_fb` [shield-shim.c:339](../../remote-shield/shim/shield-shim.c) |
-| Kích thước khung lấy từ SRC_W/SRC_H trong chính request (hoặc giá trị cũ của plane) | `src_extent` [shield-shim.c:373](../../remote-shield/shim/shield-shim.c) |
-| Ghép `shield.png` vào giữa khung trắng (cairo lấy bằng dlsym) | `blit_overlay` [shield-shim.c:253](../../remote-shield/shim/shield-shim.c) |
-| Chương trình tự kiểm tra (`-DSELFTEST`) | `main` [shield-shim.c:712](../../remote-shield/shim/shield-shim.c) |
+| Constructor: bỏ mình khỏi LD_PRELOAD, chỉ chạy khi `comm == gnome-shell`, xoá cờ cũ, kill switch, guard | `shim_init` [shield-shim.c:715](../../remote-shield/shim/shield-shim.c) |
+| Destructor: xoá marker (thoát bình thường không tính là sự cố) | `shim_fini` [shield-shim.c:759](../../remote-shield/shim/shield-shim.c) |
+| Hook giao khung | `drmModeAtomicCommit` [shield-shim.c:563](../../remote-shield/shim/shield-shim.c) |
+| Kiểm tra bố cục `drmModeAtomicReq` lúc chạy | `check_layout` [shield-shim.c:454](../../remote-shield/shim/shield-shim.c) |
+| Đọc cờ, bật/tắt, marker/guard | `update_want` [shield-shim.c:480](../../remote-shield/shim/shield-shim.c) |
+| Ghi trạng thái (nguyên tử: .tmp rồi rename) | `write_status` [shield-shim.c:510](../../remote-shield/shim/shield-shim.c) |
+| Liệt kê plane, thuộc tính FB_ID/CRTC/SRC_*, cursor cap | `load_planes` [shield-shim.c:173](../../remote-shield/shim/shield-shim.c), `get_dev` [shield-shim.c:213](../../remote-shield/shim/shield-shim.c) |
+| Tạo dumb buffer + framebuffer (màn che XRGB8888, giữ map để vẽ lại / trong suốt ARGB8888), cache theo kích thước | `create_fb` [shield-shim.c:329](../../remote-shield/shim/shield-shim.c), `get_fb` [shield-shim.c:380](../../remote-shield/shim/shield-shim.c) |
+| Kích thước khung lấy từ SRC_W/SRC_H trong chính request (hoặc giá trị cũ của plane) | `src_extent` [shield-shim.c:416](../../remote-shield/shim/shield-shim.c) |
+| Nội dung khung: `shield-<w>x<h>.png` nếu có, không thì nền trắng + `shield.png` ở giữa (cairo lấy bằng dlsym) | `paint_fb` [shield-shim.c:302](../../remote-shield/shim/shield-shim.c), `blit_png` [shield-shim.c:258](../../remote-shield/shim/shield-shim.c) |
+| `shield.gen` đổi (kiểm tra mỗi 100 ms) → vẽ lại tại chỗ mọi khung màn che | `repaint_all` [shield-shim.c:315](../../remote-shield/shim/shield-shim.c) |
+| Chương trình tự kiểm tra (`-DSELFTEST`) | `main` [shield-shim.c:767](../../remote-shield/shim/shield-shim.c) |
 
 Thuật toán trong hook, với mỗi lần commit:
 1. Đọc cờ (tối đa 1 lần / 100 ms).
-2. Nếu đang che và không có guard hay `swap_failed`: duyệt `req->items`. Item là `FB_ID` của plane, giá trị khác 0 → thay bằng FB trắng (cursor: FB trong suốt, tối thiểu bằng cursor cap 256×256). Nếu plane có `FB_DAMAGE_CLIPS` thì đặt về 0 (card này không có).
+2. Nếu đang che và không có guard hay `swap_failed`: duyệt `req->items`. Item là `FB_ID` của plane, giá trị khác 0 → thay bằng FB màn che (cursor: FB trong suốt, tối thiểu bằng cursor cap 256×256). Nếu plane có `FB_DAMAGE_CLIPS` thì đặt về 0 (card này không có).
 3. Gọi hàm thật, rồi luôn khôi phục giá trị gốc trong `req`, vì Mutter tái sử dụng request.
 4. Lỗi (trừ EBUSY/EAGAIN): gửi lại khung gốc, đặt `swap_failed = 1` và ngừng thay khung tới khi cờ tắt rồi bật lại.
 5. Thành công lần đầu sau khi bật cờ: ghi status ngay để extension xác nhận nhanh.
@@ -138,7 +141,10 @@ Không có database. Các file trạng thái:
 |---|---|---|
 | `$XDG_RUNTIME_DIR/remote-shield/blank` | extension (`setFlag`), `shieldctl on/off` | Có file = yêu cầu che. Shim xoá khi khởi động |
 | `$XDG_RUNTIME_DIR/remote-shield/shim-status` | shim | Dạng `key=value` (xem dưới), ghi lại tối đa 2 giây một lần, ghi ngay khi có chuyển trạng thái |
-| `$XDG_RUNTIME_DIR/remote-shield/shield.png` | extension (`renderOverlay`) | Ảnh chữ 1400×320 nền trắng |
+| `$XDG_RUNTIME_DIR/remote-shield/shield-<W>x<H>.png` | extension (`_renderShield`) | Ảnh màn che toàn màn, mỗi kích thước màn hình một file; vẽ lại lúc kéo rèm và đầu mỗi phút |
+| `$XDG_RUNTIME_DIR/remote-shield/shield.gen` | extension | Đổi sau mỗi lần vẽ; shim thấy mtime đổi thì vẽ lại khung |
+| `~/.cache/remote-shield/bg-<W>x<H>.png` | extension | Hình nền đã làm mờ (cache theo hình nền + mtime + kích thước) |
+| `$XDG_RUNTIME_DIR/remote-shield/shield.png` | (kiểu cũ) | Shim còn hỗ trợ: nền trắng + ảnh ở giữa khi không có ảnh theo kích thước; extension xoá file này lúc bật |
 | `~/.cache/remote-shield/shim.log` | shim | Log của shim (khởi tạo, bố cục, bật/tắt, lỗi, 40 commit đầu chi tiết) |
 | `~/.cache/remote-shield/shim-blanking.marker` | shim | Tồn tại khi đang che. Còn sót lúc khởi động (gnome-shell chết khi đang che) → bật guard |
 | `~/.config/remote-shield/shim-disabled` | người dùng | Kill switch: có file → shim không làm gì |
@@ -181,7 +187,7 @@ Bố cục nội bộ libdrm mà shim dựa vào:
 ## 6. Cấu hình và tác động khi đổi
 
 File `~/.local/share/gnome-shell/extensions/remote-shield@ubuntu-assistant/config.json`:
-- `install.sh` giữ nguyên file này nếu đã có. Khoá thiếu lấy theo `DEFAULTS` ở [core.js:25](../../remote-shield/remote-shield@ubuntu-assistant/core.js).
+- `install.sh` giữ nguyên file này nếu đã có. Khoá thiếu lấy theo `DEFAULTS` ở [core.js:29](../../remote-shield/remote-shield@ubuntu-assistant/core.js).
 - Đổi xong, tắt rồi bật lại extension (hoặc chạy `./install.sh`) để áp dụng.
 
 | Khoá | Mặc định | Tác động |
@@ -193,7 +199,8 @@ File `~/.local/share/gnome-shell/extensions/remote-shield@ubuntu-assistant/confi
 | `verifyMs` | 4000 | Thời gian chờ khung trắng đầu tiên. Quá thời gian thì `_fail` |
 | `gatherWindows` | true | false: không dồn cửa sổ từ màn phụ |
 | `allowWhenLocked` | true | false: GNOME chặn Desktop Sharing khi màn hình khóa; vì Remote Shield khóa máy sau mỗi lần ngắt, sẽ không remote lại được tới khi có người mở khóa tại máy |
-| `message`, `submessage` | tiếng Việt | Dòng chữ trên màn trắng. Vẽ lại lúc bật extension |
+| `localTakeover` | true | false: bấm tại chỗ không làm gì; chỉ Ctrl+Alt+Shift+Backspace ngắt remote |
+| `hint` | `""` | Dòng gợi ý dưới ngày. `""` = đúng câu của màn khóa GNOME ("Click or press a key to unlock", dịch theo locale) để màn che không lộ là đang có remote; chuỗi khác = câu tuỳ chọn; `null` = không có. `message`/`submessage` cũ không còn dùng |
 
 Thiết lập hệ thống liên quan:
 - `org.gnome.desktop.remote-desktop.rdp screen-share-mode = 'mirror-primary'`: `install.sh` luôn đặt. Đổi sang `extend` thì RDP thành màn hình ảo thứ ba và việc dồn cửa sổ mất ý nghĩa.
@@ -201,7 +208,13 @@ Thiết lập hệ thống liên quan:
 
 ## 7. Giao diện
 
-- Màn hình thật khi đang che: nền trắng toàn màn, giữa là biểu tượng khoá, dòng `message` (Ubuntu Sans Medium 34) và `submessage` (Ubuntu Sans 18). Con trỏ chuột trong suốt.
+- Màn hình thật khi đang che: giống màn khóa GNOME 50 / Yaru (thông số lấy từ `ui/unlockDialog.js` và CSS Yaru):
+  - nền là hình nền desktop (zoom) làm mờ Gauss (radius 90 → sigma 45 px), độ sáng 0.65;
+  - cột chữ căn giữa, mép trên ở 1/3 chiều cao: giờ 6.546em (`GnomeDesktop.WallClock`, chữ số đều `tnum`), ngày 1.818em (`%A %B %-d` dịch theo locale), dòng gợi ý 1em cách 2em (mặc định đúng câu của màn khóa, luôn hiện; màn khóa thật hiện sau 4 giây không thao tác);
+  - chữ #f2f2f2, font giao diện (Ubuntu Sans), độ đậm thường; 1em = 11pt × text-scaling-factor × scale;
+  - đồng hồ vẽ lại đầu mỗi phút; con trỏ chuột trong suốt.
+  - Không vẽ: thanh trên cùng (biểu tượng mạng/âm lượng/nguồn) và thông báo của màn khóa.
+- Bấm chuột / phím / chạm tại máy: Remote Shield ngắt remote, khóa máy, mở ô nhập mật khẩu (`screenShield._activateDialog`).
 - Thông báo GNOME ("Remote Shield"):
   - khi che xong: "Màn hình tại chỗ đã được che…";
   - khi không che được: kèm lý do, và "Đã ngắt phiên remote và khóa máy" nếu bật `failClosed`.
@@ -217,6 +230,7 @@ Thiết lập hệ thống liên quan:
 | 2026-11-12 | Dồn/trả cửa sổ màn phụ; chuyển sang file khởi động mỏng |
 | 2026-11-13 | Bỏ qua phiên headless (Remote Login bị văng ra sau khi gõ mật khẩu) |
 | 2026-11-13 | #16: `install.sh` hợp nhất (kiểm tra máy, `--rdp`, `--remote-login`, `--force`); drop-in chuyển sang template `org.gnome.Shell@.service.d`; `package.sh` tạo gói tar.gz |
+| 2026-11-13 | #20: màn che giống hệt màn khóa (hình nền mờ, giờ chạy, ngày, gợi ý); bấm tại máy → ngắt remote, khóa, hiện ô mật khẩu; shim vẽ ảnh toàn màn theo kích thước và vẽ lại khi `shield.gen` đổi |
 | 2026-11-13 | #19: tích hợp remote khi màn hình khóa (`allowWhenLocked`, mặc định bật); `install.sh` gỡ extension Allow Locked Remote Desktop (đã gỡ trên máy này) |
 
 ## 9. Cấu trúc thư mục
@@ -226,13 +240,14 @@ remote-shield/
 ├─ install.sh                 cài cho user hiện tại (dùng chung cho thư mục mã nguồn và gói)
 ├─ uninstall.sh               gỡ sạch (giữ cấu hình RDP)
 ├─ package.sh                 tạo dist/remote-shield-<version>.tar.gz
+├─ tools/preview-shield.js    xuất ảnh màn che ra PNG để xem trước: gjs -m tools/preview-shield.js out.png [WxH] [gợi ý]
 ├─ packaging/README.txt       hướng dẫn cài cho người dùng cuối (chép vào gói)
 ├─ dist/                      gói đã đóng (sinh ra, không sửa tay)
 ├─ remote-shield@ubuntu-assistant/
 │  ├─ metadata.json           uuid, shell-version ["50"], session-modes [user, unlock-dialog], version-name
 │  ├─ extension.js            file khởi động mỏng (gần như không bao giờ sửa)
 │  ├─ core.js                 toàn bộ logic extension (ShieldCore)
-│  ├─ overlay.js              vẽ shield.png
+│  ├─ overlay.js              ShieldPainter: vẽ ảnh màn che giống màn khóa (chạy được bằng gjs)
 │  └─ config.json             cấu hình mặc định
 └─ shim/
    ├─ shield-shim.c           thư viện LD_PRELOAD (+ chương trình selftest khi -DSELFTEST)
@@ -281,7 +296,8 @@ Code path cheatsheet:
 | Đổi cách chặn input / phím khẩn cấp | `core.js` `_filter` |
 | Đổi quy tắc dồn/trả cửa sổ | `core.js` `_gatherWindows`, `_restoreWindows` |
 | Đổi kiểm tra an toàn / thời gian chờ | `core.js` `_verify`, `_shimProblem`, `config.json` `verifyMs` |
-| Đổi chữ / bố cục ảnh trên màn trắng | `overlay.js` (+ `message` trong config) |
+| Đổi giao diện màn che | `overlay.js` (xem trước bằng `tools/preview-shield.js`), dòng gợi ý: `hint` trong config |
+| Đổi hành vi khi người tại máy bấm | `core.js` `_filter`, `_localTakeover` |
 | Đổi màu nền, cách thay khung, xử lý cursor | `shield-shim.c` `create_fb`, hook `drmModeAtomicCommit` |
 | Thêm trường trạng thái | `shield-shim.c` `write_status` + `core.js` `readStatus`/`_shimProblem` + `shieldctl` |
 | Đổi cách cài / bật RDP | `install.sh` |
@@ -323,6 +339,9 @@ Trạng thái runtime (2026-11-13):
 | Drop-in template `org.gnome.Shell@.service.d` | Áp dụng cho mọi biến thể phiên (@ubuntu, @wayland) khi cài máy khác |
 | Cài theo user, đóng gói tar.gz thay vì .deb | Mọi thành phần nằm trong `$HOME`, không cần root; .deb chỉ đáng làm khi cần cài nhiều user/máy |
 | Giao tiếp qua file thay vì D-Bus | Shim chạy trong hook giao khung, phải cực rẻ và không gọi vào main loop; `access()` + ghi file nguyên tử là đủ |
+| Màn che giống màn khóa thay vì màn trắng có chữ | Người dùng yêu cầu (#20): người đi ngang chỉ thấy máy đang khóa, không lộ việc đang có người điều khiển; thao tác bấm để vào máy giống màn khóa thật |
+| Bấm bất kỳ tại máy là ngắt remote (localTakeover) | Giống màn khóa: chủ máy luôn lấy lại được máy và nhập mật khẩu; chuyển động chuột đơn thuần không tính để tránh lỡ tay |
+| Ảnh vẽ sẵn theo kích thước màn hình, shim chỉ chép | Shim chạy trong đường giao khung, không được vẽ chữ hay làm mờ; mọi xử lý nặng làm ở extension (làm mờ chỉ khi đổi hình nền) |
 | Tên "Remote Shield" | Người dùng chọn (từ chối "Veil"). Không đổi tên khi chưa hỏi |
 
 ## 14. Common Pitfalls
@@ -333,7 +352,7 @@ Trạng thái runtime (2026-11-13):
 | Cài lại xong extension nằm INACTIVE | `gnome-extensions disable` bất đồng bộ; `enable` gửi lúc chưa tắt xong bị bỏ qua | Chờ trạng thái INACTIVE rồi mới enable, chờ ACTIVE (`install.sh`) |
 | LD_PRELOAD không nạp / import gjs lỗi | Đường dẫn project có dấu cách ("Ubuntu Assistant"); LD_PRELOAD tách theo dấu cách | Cài thư viện vào `~/.local/lib/remote-shield/` |
 | Sửa core.js nhưng shell vẫn chạy code cũ | Cache ESM | File khởi động mỏng; lần đầu chuyển sang kiểu này vẫn phải đăng xuất một lần |
-| Bật cờ nhưng màn hình chưa trắng | Mutter chỉ commit khi có thay đổi | `global.stage.queue_redraw()` sau khi đổi cờ; `shieldctl` gửi `notify-send` để buộc vẽ lại |
+| Bật cờ nhưng màn hình chưa đổi | Mutter chỉ commit khi có thay đổi | `global.stage.queue_redraw()` sau khi đổi cờ; `shieldctl` gửi `notify-send` để buộc vẽ lại |
 | Extension báo chưa che dù shim đã che | Status ghi 2 s/lần, đến muộn | Shim ghi status ngay khi chuyển trạng thái, lần thay khung đầu tiên và khi lỗi |
 | Bật cờ không có tác dụng sau khi gnome-shell crash | Guard bật vì marker còn sót | Kiểm tra nguyên nhân crash, rồi `shieldctl reset-guard` |
 | Menu Ubuntu và HUD nhảy sang màn trái | Màn chính bị đổi sang HDMI-3 (một màn mất tín hiệu thoáng qua, Mutter lưu lại monitors.xml); không do Remote Shield | Đặt lại DP-2 qua `ApplyMonitorsConfig`. RDP mirror-primary gửi đúng màn chính nên màn chính sai thì người remote xem sai màn |

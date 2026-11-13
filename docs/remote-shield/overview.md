@@ -1,12 +1,12 @@
 # Remote Shield — Tổng quan
 
-Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. Khi có người kết nối RDP, màn hình thật tại máy chuyển trắng và bàn phím, chuột tại chỗ bị khoá. Người remote vẫn thấy và điều khiển đúng desktop đang mở.
+Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. Khi có người kết nối RDP, màn hình thật tại máy hiện như đang khóa và bàn phím, chuột tại chỗ bị khoá. Người remote vẫn thấy và điều khiển đúng desktop đang mở.
 
 ## Bài toán giải quyết
 
 | Bài toán | Cách xử lý |
 |---|---|
-| RDP của GNOME chỉ chia sẻ màn hình: người ngồi tại máy thấy hết mọi thao tác của người remote | Thay khung hình ngay trước khi giao cho card màn hình: màn hình thật nhận khung trắng, còn ảnh gửi cho RDP vẫn là desktop thật |
+| RDP của GNOME chỉ chia sẻ màn hình: người ngồi tại máy thấy hết mọi thao tác của người remote | Thay khung hình ngay trước khi giao cho card màn hình: màn hình thật nhận khung giống màn khóa, còn ảnh gửi cho RDP vẫn là desktop thật |
 | Che bằng một lớp phủ trong GNOME thì người remote cũng bị che (RDP chụp chính hình GNOME vẽ) | Không che trong GNOME mà che ở tầng thấp hơn (giao khung cho driver), nơi RDP không đi qua |
 | Người tại chỗ vẫn bấm phím, rê chuột được trong lúc người khác đang remote | Chặn input từ thiết bị thật; thiết bị ảo của phiên RDP vẫn được nhận |
 | Ngắt kết nối xong, desktop lộ ra cho người đứng ở máy | Khoá máy trước rồi mới trả lại màn hình |
@@ -32,9 +32,9 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
   │              ▼                                                   │
   │  shield-shim.so  (nạp sẵn vào gnome-shell qua LD_PRELOAD)        │
   │    chặn lệnh giao khung drmModeAtomicCommit                      │
-  │    đổi khung đã vẽ → khung trắng có dòng thông báo               │
+  │    đổi khung đã vẽ → khung giống màn khóa               │
   └──────────────────────────────┬──────────────────────────────────┘
-                                 ▼ khung trắng
+                                 ▼ khung giống màn khóa
                     Driver đồ hoạ (KMS) → màn hình thật
 ```
 
@@ -53,7 +53,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 | Đối tượng | Nhận được |
 |---|---|
 | Người remote | Thấy và điều khiển đúng desktop đang mở, đủ app (kể cả app ở màn phụ) |
-| Người ngồi tại máy | Màn hình trắng với dòng "Máy tính đang được điều khiển từ xa"; phím, chuột không có tác dụng; có phím khẩn cấp Ctrl+Alt+Shift+Backspace để ngắt remote và khoá máy |
+| Người ngồi tại máy | Thấy màn hình như máy đang khóa (hình nền mờ, đồng hồ chạy), không lộ là có người remote; bấm chuột hoặc phím bất kỳ thì phiên remote bị ngắt và ô nhập mật khẩu hiện ra để vào máy |
 | Người quản trị | Một lệnh cài cho máy mới, lệnh `shieldctl` để kiểm tra, log rõ ràng trong journal |
 
 ## Tính năng chính theo mốc thời gian
@@ -67,6 +67,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 | 2026-11-13 | Sửa lỗi Remote Login bị văng ra sau khi gõ mật khẩu (Remote Shield không can thiệp phiên không có màn hình thật) |
 | 2026-11-13 | Đóng gói `remote-shield-2.0.tar.gz` để cài lên máy Ubuntu khác |
 | 2026-11-13 | Remote được cả khi máy đang khóa, không cần cài thêm extension nào |
+| 2026-11-13 | Màn che giống hệt màn khóa; người tại máy bấm là ngắt remote và nhập mật khẩu vào máy |
 
 ## Tech stack
 

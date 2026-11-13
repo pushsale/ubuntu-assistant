@@ -2,12 +2,13 @@ REMOTE SHIELD — remote vào Ubuntu kiểu Windows Remote Desktop
 ================================================================
 
 Khi có người kết nối RDP vào phiên đang mở:
-  - Màn hình thật tại máy chuyển trắng, chỉ hiện dòng "Máy tính đang được điều khiển từ xa".
-  - Bàn phím, chuột tại chỗ bị vô hiệu hoá.
+  - Màn hình thật tại máy trông như đang khóa (hình nền mờ, đồng hồ), không lộ là có người remote.
+  - Bàn phím, chuột tại chỗ không điều khiển được máy. Bấm chuột hoặc phím bất kỳ: phiên remote
+    bị ngắt và ô nhập mật khẩu hiện ra để chủ máy vào máy.
   - Người remote vẫn thấy và điều khiển desktop thật, đủ mọi app đang mở.
   - Cửa sổ ở màn phụ được dồn sang màn chính để người remote thấy hết.
 Khi ngắt kết nối: cửa sổ về lại chỗ cũ, máy tự khoá, màn hình hiện lại bình thường.
-Máy đang khoá vẫn remote vào được: người remote thấy màn khoá, mở khoá từ xa (màn hình thật vẫn bị che).
+Máy đang khoá vẫn remote vào được: người remote thấy màn khoá, mở khoá từ xa (màn hình thật vẫn hiện màn khoá).
 Không cần cài thêm extension "Allow Locked Remote Desktop"; nếu máy đã có, install.sh tự gỡ.
 
 YÊU CẦU
@@ -27,7 +28,7 @@ CÀI ĐẶT (chạy bằng user dùng máy, không dùng sudo)
   Script sẽ hỏi tài khoản RDP: đây là tài khoản riêng cho kết nối RDP, có thể khác mật khẩu Ubuntu.
 
   Sau khi cài: ĐĂNG XUẤT rồi ĐĂNG NHẬP LẠI.
-  Kiểm tra màn che ngay tại máy: shieldctl test 10   (màn hình trắng 10 giây rồi tự trở lại)
+  Kiểm tra màn che ngay tại máy: shieldctl test 10   (màn hình như đang khoá 10 giây rồi tự trở lại)
 
 KẾT NỐI TỪ MÁY KHÁC (Windows: Remote Desktop Connection, macOS: Windows App, Linux: Remmina)
   Máy đang đăng nhập  -> Desktop Sharing: <IP-máy>:3390 (là 3389 nếu không bật Remote Login)
@@ -40,8 +41,8 @@ KẾT NỐI TỪ MÁY KHÁC (Windows: Remote Desktop Connection, macOS: Windows 
 LỆNH HỮU ÍCH
   shieldctl status     trạng thái thư viện che màn hình
   shieldctl log        log gần nhất
-  shieldctl off        tắt màn che bằng tay (gõ mù được nếu màn hình đang trắng)
-  Phím khẩn cấp tại máy khi đang bị che: Ctrl+Alt+Shift+Backspace (ngắt remote và khoá máy)
+  shieldctl off        tắt màn che bằng tay (gõ mù được nếu màn che bị kẹt)
+  Tại máy khi đang có remote: bấm chuột hoặc phím bất kỳ để ngắt remote và nhập mật khẩu
 
 AN TOÀN
   Nếu không xác nhận được màn hình thật đã bị che, Remote Shield chủ động ngắt kết nối remote

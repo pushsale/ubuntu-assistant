@@ -1,26 +1,31 @@
 // Remote Shield
 // Khi có phiên Remote Desktop (RDP của gnome-remote-desktop) đang chạy:
-//   - màn hình thật chuyển trắng (kèm dòng thông báo) nhờ thư viện shield-shim nạp trong gnome-shell;
-//     hình gửi cho người remote không bị ảnh hưởng
+//   - màn hình thật hiện màn che giống hệt màn khóa (hình nền mờ, giờ, ngày, dòng gợi ý) nhờ thư viện
+//     shield-shim nạp trong gnome-shell; hình gửi cho người remote không bị ảnh hưởng
 //   - chặn chuột, bàn phím, touchpad thật tại máy; chỉ nhận thao tác từ phía remote
+//   - người tại máy bấm chuột / phím bất kỳ -> ngắt remote, khóa máy, hiện ô nhập mật khẩu (localTakeover)
 // Khi phiên remote kết thúc: mở lại input, khóa máy, rồi mới trả lại màn hình.
 // Không che được màn hình (shim chưa nạp / driver từ chối) -> ngắt phiên remote và khóa máy (failClosed).
-// Lối thoát tại chỗ: Ctrl+Alt+Shift+Backspace trên bàn phím thật -> ngắt remote + khóa máy.
 //
 // Giao tiếp với shield-shim qua thư mục $XDG_RUNTIME_DIR/remote-shield:
-//   blank        có file = yêu cầu che màn hình
-//   shield.png  ảnh chữ đặt giữa màn trắng (extension vẽ lúc bật)
-//   shim-status  trạng thái shim ghi ra (pid, want_blank, swapped_since_on, swap_failed, guard...)
+//   blank               có file = yêu cầu che màn hình
+//   shield-<W>x<H>.png  ảnh màn che toàn màn cho từng kích thước màn hình (overlay.js vẽ, mỗi phút vẽ lại)
+//   shield.gen          đổi nội dung mỗi lần vẽ lại -> shim vẽ lại khung đang hiển thị
+//   shim-status         trạng thái shim ghi ra (pid, want_blank, swapped_since_on, swap_failed, guard...)
 
+import Gettext from 'gettext';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+import GnomeDesktop from 'gi://GnomeDesktop';
+import {formatDateWithCFormatString} from 'resource:///org/gnome/shell/misc/dateUtils.js';
 
 // Nạp kèm mã phiên bản của chính file này để overlay.js cũng là bản mới sau mỗi lần cập nhật.
 const VERSION_QUERY = import.meta.url.includes('?') ? import.meta.url.slice(import.meta.url.indexOf('?')) : '';
-const {renderOverlay} = await import(`./overlay.js${VERSION_QUERY}`);
+const {ShieldPainter} = await import(`./overlay.js${VERSION_QUERY}`);
 
 const DEFAULTS = {
     blockInput: true,         // chặn input thật khi có phiên remote
@@ -30,14 +35,16 @@ const DEFAULTS = {
     verifyMs: 4000,           // thời gian chờ khung trắng đầu tiên lên màn hình
     gatherWindows: true,      // dồn cửa sổ ở màn phụ sang màn chính (màn RDP thấy), trả về chỗ cũ khi ngắt
     allowWhenLocked: true,    // vẫn cho kết nối Desktop Sharing khi màn hình đang khóa (GNOME mặc định chặn)
-    message: 'Máy tính đang được điều khiển từ xa',
-    submessage: 'Màn hình, bàn phím và chuột tại chỗ tạm thời bị vô hiệu hoá',
+    localTakeover: true,      // người tại máy bấm chuột / phím -> ngắt remote, khóa máy, hiện ô mật khẩu
+    hint: '',                 // '' = đúng câu gợi ý của màn khóa GNOME (dịch theo ngôn ngữ hệ thống); null = không có dòng gợi ý
 };
 
 const RUN_DIR = GLib.build_filenamev([GLib.get_user_runtime_dir(), 'remote-shield']);
 const FLAG = GLib.build_filenamev([RUN_DIR, 'blank']);
 const STATUS = GLib.build_filenamev([RUN_DIR, 'shim-status']);
-const OVERLAY = GLib.build_filenamev([RUN_DIR, 'shield.png']);
+const OLD_OVERLAY = GLib.build_filenamev([RUN_DIR, 'shield.png']); // ảnh chữ kiểu cũ (nền trắng)
+const GEN = GLib.build_filenamev([RUN_DIR, 'shield.gen']);          // đổi nội dung = báo shim vẽ lại
+const CACHE_DIR = GLib.build_filenamev([GLib.get_user_cache_dir(), 'remote-shield']);
 
 const PASS_EVENTS = new Set([
     Clutter.EventType.NOTHING,
@@ -113,12 +120,15 @@ export class ShieldCore {
         this._shellPid = String(new Gio.Credentials().get_unix_pid());
 
         setFlag(false); // phiên mới luôn bắt đầu với màn hình bình thường
+        this._painter = new ShieldPainter(CACHE_DIR);
+        this._bgSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.background'});
+        this._ifSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         try {
-            GLib.mkdir_with_parents(RUN_DIR, 0o700);
-            renderOverlay(this._cfg, OVERLAY);
+            Gio.File.new_for_path(OLD_OVERLAY).delete(null);
         } catch (e) {
-            log(`không vẽ được ảnh chữ: ${e.message}`);
+            // không có ảnh kiểu cũ
         }
+        this._renderShield(); // vẽ sẵn (kể cả làm mờ hình nền) để lúc có remote chỉ cần vẽ lại giờ
 
         this._controller = global.backend.get_remote_access_controller();
         this._newHandleId = this._controller?.connect('new-handle', (_c, handle) => this._onNewHandle(handle)) ?? 0;
@@ -146,6 +156,9 @@ export class ShieldCore {
         this._engaged = false;
         setFlag(false);
         this._restoreLockedRemote();
+        this._painter = null;
+        this._bgSettings = null;
+        this._ifSettings = null;
         this._controller = null;
         this._handles = null;
         this._timers = null;
@@ -188,6 +201,79 @@ export class ShieldCore {
         } catch (e) {
             log(`không hiện được thông báo: ${e.message}`);
         }
+    }
+
+    // ---------- ảnh màn che (giống màn khóa) ----------
+
+    // Vẽ shield-<W>x<H>.png cho mỗi kích thước màn hình rồi đổi shield.gen để shim vẽ lại khung.
+    _renderShield() {
+        try {
+            GLib.mkdir_with_parents(RUN_DIR, 0o700);
+            const dark = this._ifSettings.get_string('color-scheme') === 'prefer-dark';
+            const uri = this._bgSettings.get_string(dark ? 'picture-uri-dark' : 'picture-uri');
+            const wall = new GnomeDesktop.WallClock({time_only: true});
+            const time = wall.clock.trim();
+            wall.run_dispose();
+            const date = formatDateWithCFormatString(new Date(),
+                Shell.util_translate_time_string('%A %B %-d'));
+            const base = {
+                wallpaper: uri ? Gio.File.new_for_uri(uri).get_path() : null,
+                primaryColor: this._bgSettings.get_string('primary-color'),
+                fontFamily: this._ifSettings.get_string('font-name').replace(/\s+[\d.]+$/, ''),
+                textScale: this._ifSettings.get_double('text-scaling-factor'),
+                time, date,
+                // giống hệt màn khóa: không lộ ra là đang có người điều khiển từ xa
+                hint: this._cfg.hint === '' ? Gettext.domain('gnome-shell').gettext('Click or press a key to unlock') : this._cfg.hint,
+            };
+            const done = new Set();
+            for (let i = 0; i < global.display.get_n_monitors(); i++) {
+                const g = global.display.get_monitor_geometry(i);
+                const scale = global.display.get_monitor_scale(i);
+                const width = Math.round(g.width * scale), height = Math.round(g.height * scale);
+                const key = `${width}x${height}`;
+                if (done.has(key))
+                    continue;
+                done.add(key);
+                this._painter.render({...base, width, height, scale},
+                    GLib.build_filenamev([RUN_DIR, `shield-${key}.png`]));
+            }
+            GLib.file_set_contents(GEN, String(GLib.get_real_time()));
+        } catch (e) {
+            log(`không vẽ được ảnh màn che: ${e.message}`);
+        }
+    }
+
+    // Trong lúc che: vẽ lại đúng đầu mỗi phút để đồng hồ chạy như màn khóa thật.
+    _scheduleClock() {
+        this._cancel(this._clockId);
+        const now = GLib.DateTime.new_now_local();
+        const ms = (60 - now.get_second()) * 1000 - Math.floor(now.get_microsecond() / 1000) + 50;
+        this._clockId = this._timeout(ms, () => {
+            this._clockId = 0;
+            if (!this._engaged)
+                return GLib.SOURCE_REMOVE;
+            this._renderShield();
+            this._redraw();
+            this._timeout(150, () => {
+                this._redraw(); // shim kiểm tra shield.gen mỗi 100 ms trong lúc giao khung
+                return GLib.SOURCE_REMOVE;
+            });
+            this._scheduleClock();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    // Người tại máy bấm chuột / phím trên màn che: ngắt remote, khóa máy, mở sẵn ô mật khẩu.
+    _localTakeover() {
+        if (this._takingOver || !this._engaged)
+            return;
+        this._takingOver = true;
+        log('người tại máy yêu cầu dừng remote');
+        this._promptAfterLock = true;
+        this._stopRemote();
+        if (this._engaged)
+            this._disengage(true);
+        this._takingOver = false;
     }
 
     // ---------- cho remote khi màn hình khóa ----------
@@ -296,8 +382,10 @@ export class ShieldCore {
         this._unflagId = 0;
         if (this._cfg.blockInput && !this._filterId)
             this._filterId = Clutter.Event.add_filter(global.stage, event => this._filter(event));
+        this._renderShield(); // giờ hiện tại (nền đã làm mờ sẵn lúc bật extension)
         setFlag(true);
         this._redraw();
+        this._scheduleClock();
         log('kéo rèm: yêu cầu che màn hình thật, chặn input tại chỗ');
         if (this._cfg.gatherWindows)
             this._gatherWindows();
@@ -377,7 +465,8 @@ export class ShieldCore {
         this._engaged = false;
         this._cancel(this._verifyId);
         this._cancel(this._watchId);
-        this._verifyId = this._watchId = 0;
+        this._cancel(this._clockId);
+        this._verifyId = this._watchId = this._clockId = 0;
         if (this._filterId) {
             Clutter.Event.remove_filter(this._filterId);
             this._filterId = 0;
@@ -390,6 +479,12 @@ export class ShieldCore {
             this._unflagId = 0;
             setFlag(false);
             this._redraw();
+            if (this._promptAfterLock) {
+                this._promptAfterLock = false;
+                // màn khóa đang hiện đồng hồ: chuyển ngay sang ô nhập mật khẩu (giống bấm phím trên màn khóa)
+                if (Main.sessionMode.isLocked)
+                    Main.screenShield?._activateDialog?.();
+            }
             this._timeout(250, () => {
                 this._redraw();
                 return GLib.SOURCE_REMOVE;
@@ -479,15 +574,18 @@ export class ShieldCore {
         if (!device || !device.get_device_node())
             return Clutter.EVENT_PROPAGATE;
 
-        if (type === Clutter.EventType.KEY_PRESS && event.get_key_symbol() === Clutter.KEY_BackSpace) {
-            const need = Clutter.ModifierType.CONTROL_MASK | Clutter.ModifierType.MOD1_MASK | Clutter.ModifierType.SHIFT_MASK;
-            if ((event.get_state() & need) === need) {
-                // Lối thoát tại chỗ: ngắt mọi phiên remote rồi khóa máy
-                log('lối thoát tại chỗ được kích hoạt');
+        const press = type === Clutter.EventType.BUTTON_PRESS || type === Clutter.EventType.KEY_PRESS ||
+            type === Clutter.EventType.TOUCH_BEGIN;
+        if (press) {
+            let takeover = this._cfg.localTakeover;
+            if (!takeover && type === Clutter.EventType.KEY_PRESS && event.get_key_symbol() === Clutter.KEY_BackSpace) {
+                // Tắt localTakeover: vẫn còn lối thoát Ctrl+Alt+Shift+Backspace
+                const need = Clutter.ModifierType.CONTROL_MASK | Clutter.ModifierType.MOD1_MASK | Clutter.ModifierType.SHIFT_MASK;
+                takeover = (event.get_state() & need) === need;
+            }
+            if (takeover) {
                 GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                    this._stopRemote();
-                    if (this._engaged)
-                        this._disengage(true);
+                    this._localTakeover();
                     return GLib.SOURCE_REMOVE;
                 });
             }

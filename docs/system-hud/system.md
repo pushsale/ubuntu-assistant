@@ -127,7 +127,7 @@ File `~/.local/share/gnome-shell/extensions/system-hud@ubuntu-assistant/config.j
 | `widthFraction` | 0.25 | 0.25 | Tỉ lệ chiều rộng màn hình; chiều cao luôn bằng work area trừ `gap` |
 | `gap` | 12 | 12 | Khoảng cách tới mép, top bar, dock |
 | `intervalMs` | 3000 | 3000 | Chu kỳ đo (tối thiểu 500). Giảm thì tốn CPU hơn và đồ thị 60 mẫu phủ ít thời gian hơn |
-| `animMs` | 900 | 900 | Thời gian hiệu ứng; `0` = tắt hiệu ứng (vẽ 1 lần mỗi mẫu) |
+| `animMs` | 900 | 3000 (thử từ 2026-11-13: chuyển liên tục suốt chu kỳ, CPU gnome-shell tăng khoảng 16% một nhân) | Thời gian hiệu ứng; `0` = tắt hiệu ứng (vẽ 1 lần mỗi mẫu) |
 | `fps` | 30 | 30 | Số khung/giây khi đang chạy hiệu ứng |
 
 Thiết lập ngoài cũng ảnh hưởng tới HUD:
@@ -269,6 +269,7 @@ Trạng thái runtime (2026-11-13):
 | HUD bị hình nền che sau khi đổi wallpaper | Actor nền mới được thêm lên trên | Đã xử lý bằng `child-added` → `_raise()` |
 | Đổi UUID: HUD mới không hiện ngay | Wayland không nạp extension mới khi shell đang chạy | Đăng xuất / đăng nhập; bản cũ vẫn chạy tới lúc đó |
 | Xoá thư mục của extension đang chạy: extension biến mất, log `ImportError … core.js: No such file` | Tắt một extension thì GNOME tắt rồi bật lại các extension đứng sau nó trong danh sách; lúc bật lại, extension đã mất file nên nạp `core.js` thất bại (gặp khi đổi tên HUD rồi gỡ Allow Locked Remote Desktop) | Đổi tên / gỡ extension: bỏ khỏi `enabled-extensions` rồi mới xoá thư mục, sau đó đăng xuất và đăng nhập lại để nạp sạch; không giữ bản tạm |
+| Số liệu hiện dạng `726.3962025246043 MHz` | Animator nội suy mọi số; chỗ hiển thị không làm tròn (lộ rõ khi `animMs` dài) | Làm tròn khi định dạng (`Math.round` cho Clock, Fan). Thêm số liệu mới: luôn định dạng bằng `toFixed`/`Math.round`/`fmtBytes` |
 | Gauge orbital rối mắt | Quá nhiều chi tiết trang trí | Đã bỏ thước vạch và cung xoay (2026-11-12); không thêm lại khi chưa hỏi |
 | Log có `JS ERROR … grabbedsOldRect` | Lỗi của extension tiling-assistant | Không liên quan HUD |
 

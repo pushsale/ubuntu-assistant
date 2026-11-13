@@ -69,8 +69,10 @@ struct plane {
     uint64_t last_fb, fb_changes;
 };
 struct fbent {
-    uint32_t w, h, fb_id, handle;
+    uint32_t w, h, fb_id, handle, pitch;
     int transparent;
+    uint8_t *px; /* vùng nhớ của dumb buffer, giữ map để vẽ lại khi ảnh màn che đổi (đồng hồ) */
+    size_t size;
 };
 struct dev {
     int used, fd, nplanes;
@@ -85,7 +87,9 @@ static struct {
     int active, guard, layout_ok, swap_failed, want, details, need_status;
     commit_fn real;
     pthread_mutex_t lock;
-    char flag[512], status[512], log[512], marker[512], overlay[512];
+    char flag[512], status[512], log[512], marker[512], overlay[512], rundir[512], gen[512];
+    int64_t gen_mtime;   /* mtime (ns) của file shield.gen lần cuối thấy */
+    int repaint;         /* ảnh màn che đã đổi: vẽ lại các framebuffer ở lần giao khung tới */
     struct dev devs[MAX_DEVS];
     uint64_t last_check_ms, last_status_ms, total, swapped, swapped_since_on, fails;
     char last_err[256];
@@ -250,10 +254,11 @@ static struct plane *find_plane(struct dev *d, uint32_t id)
 
 /* Ảnh chữ thông báo đặt giữa màn trắng: file PNG do extension vẽ sẵn ($XDG_RUNTIME_DIR/remote-shield/shield.png).
  * Đọc bằng cairo đã nạp sẵn trong gnome-shell (dlsym), không phụ thuộc thư viện ngoài. */
-static void blit_overlay(uint8_t *px, uint32_t pitch, uint32_t w, uint32_t h)
+/* Đặt ảnh PNG vào giữa khung (cắt nếu ảnh lớn hơn). Trả 1 nếu đã vẽ. */
+static int blit_png(const char *path, uint8_t *px, uint32_t pitch, uint32_t w, uint32_t h)
 {
-    if (!S.overlay[0] || access(S.overlay, R_OK))
-        return;
+    if (!path[0] || access(path, R_OK))
+        return 0;
     void *(*from_png)(const char *) = (void *(*)(const char *))dlsym(RTLD_DEFAULT, "cairo_image_surface_create_from_png");
     int (*status)(void *) = (int (*)(void *))dlsym(RTLD_DEFAULT, "cairo_surface_status");
     int (*fmt)(void *) = (int (*)(void *))dlsym(RTLD_DEFAULT, "cairo_image_surface_get_format");
@@ -264,17 +269,18 @@ static void blit_overlay(uint8_t *px, uint32_t pitch, uint32_t w, uint32_t h)
     void (*flush)(void *) = (void (*)(void *))dlsym(RTLD_DEFAULT, "cairo_surface_flush");
     void (*destroy)(void *) = (void (*)(void *))dlsym(RTLD_DEFAULT, "cairo_surface_destroy");
     if (!from_png || !status || !fmt || !gw || !gh || !gs || !gd || !flush || !destroy) {
-        logf_("không có cairo trong tiến trình, bỏ qua ảnh chữ");
-        return;
+        logf_("không có cairo trong tiến trình, bỏ qua ảnh màn che");
+        return 0;
     }
-    void *s = from_png(S.overlay);
+    void *s = from_png(path);
     if (!s)
-        return;
+        return 0;
     if (status(s) != 0) {
-        logf_("không đọc được %s (cairo status %d)", S.overlay, status(s));
+        logf_("không đọc được %s (cairo status %d)", path, status(s));
         destroy(s);
-        return;
+        return 0;
     }
+    int done = 0;
     flush(s);
     int f = fmt(s); /* 0 = ARGB32, 1 = RGB24: cùng bố cục 4 byte/pixel với XRGB8888 */
     unsigned char *data = gd(s);
@@ -284,12 +290,43 @@ static void blit_overlay(uint8_t *px, uint32_t pitch, uint32_t w, uint32_t h)
         uint32_t ox = (w - cw) / 2, oy = (h - ch) / 2;
         for (uint32_t y = 0; y < ch; y++)
             memcpy(px + (size_t)(oy + y) * pitch + (size_t)ox * 4, data + (size_t)y * stride, (size_t)cw * 4);
-        logf_("đã đặt ảnh chữ %ux%u vào giữa khung %ux%u", iw, ih, w, h);
+        done = 1;
     }
     destroy(s);
+    return done;
 }
 
-static uint32_t create_fb(struct dev *d, uint32_t w, uint32_t h, int transparent, uint32_t *handle_out)
+/* Vẽ nội dung khung màn che:
+ *   có <run>/shield-<w>x<h>.png (ảnh toàn màn giống màn khóa, extension vẽ đúng kích thước) -> dùng ảnh đó;
+ *   không có -> nền trắng + <run>/shield.png ở giữa (kiểu cũ). */
+static void paint_fb(uint8_t *px, uint32_t pitch, uint32_t w, uint32_t h, size_t size)
+{
+    char full[600];
+    snprintf(full, sizeof full, "%s/shield-%ux%u.png", S.rundir, w, h);
+    if (!access(full, R_OK)) {
+        memset(px, 0x00, size);
+        if (blit_png(full, px, pitch, w, h))
+            return;
+    }
+    memset(px, 0xFF, size);
+    blit_png(S.overlay, px, pitch, w, h);
+}
+
+static void repaint_all(void)
+{
+    for (int i = 0; i < MAX_DEVS; i++) {
+        struct dev *d = &S.devs[i];
+        if (!d->used)
+            continue;
+        for (int k = 0; k < d->nfbs; k++) {
+            struct fbent *e = &d->fbs[k];
+            if (!e->transparent && e->px)
+                paint_fb(e->px, e->pitch, e->w, e->h, e->size);
+        }
+    }
+}
+
+static uint32_t create_fb(struct dev *d, uint32_t w, uint32_t h, int transparent, struct fbent *out)
 {
     struct drm_mode_create_dumb cd;
     memset(&cd, 0, sizeof cd);
@@ -315,10 +352,10 @@ static uint32_t create_fb(struct dev *d, uint32_t w, uint32_t h, int transparent
         xioctl(d->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dd);
         return 0;
     }
-    memset(px, transparent ? 0x00 : 0xFF, cd.size); /* ARGB 0 = trong suốt, XRGB 0xFF.. = trắng */
-    if (!transparent)
-        blit_overlay(px, cd.pitch, w, h);
-    munmap(px, cd.size);
+    if (transparent)
+        memset(px, 0x00, cd.size); /* ARGB 0 = trong suốt */
+    else
+        paint_fb(px, cd.pitch, w, h, cd.size);
 
     struct drm_mode_fb_cmd2 f;
     memset(&f, 0, sizeof f);
@@ -329,10 +366,14 @@ static uint32_t create_fb(struct dev *d, uint32_t w, uint32_t h, int transparent
     f.pitches[0] = cd.pitch;
     if (xioctl(d->fd, DRM_IOCTL_MODE_ADDFB2, &f)) {
         snprintf(S.last_err, sizeof S.last_err, "ADDFB2 %ux%u: %s", w, h, strerror(errno));
+        munmap(px, cd.size);
         xioctl(d->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dd);
         return 0;
     }
-    *handle_out = cd.handle;
+    *out = (struct fbent){.w = w, .h = h, .fb_id = f.fb_id, .handle = cd.handle, .pitch = cd.pitch,
+                          .transparent = transparent, .px = transparent ? NULL : px, .size = cd.size};
+    if (transparent)
+        munmap(px, cd.size);
     return f.fb_id;
 }
 
@@ -345,14 +386,14 @@ static uint32_t get_fb(struct dev *d, uint32_t w, uint32_t h, int transparent)
     }
     if (d->nfbs >= MAX_FBS)
         return 0;
-    uint32_t handle = 0;
-    uint32_t id = create_fb(d, w, h, transparent, &handle);
+    struct fbent e;
+    uint32_t id = create_fb(d, w, h, transparent, &e);
     if (!id) {
         logf_("không tạo được framebuffer: %s", S.last_err);
         return 0;
     }
-    d->fbs[d->nfbs++] = (struct fbent){.w = w, .h = h, .fb_id = id, .handle = handle, .transparent = transparent};
-    logf_("tạo framebuffer %s %ux%u -> FB %u", transparent ? "trong suốt" : "trắng", w, h, id);
+    d->fbs[d->nfbs++] = e;
+    logf_("tạo framebuffer %s %ux%u -> FB %u", transparent ? "trong suốt" : "màn che", w, h, id);
     return id;
 }
 
@@ -361,6 +402,8 @@ static void free_fbs(struct dev *d)
 {
     for (int i = 0; i < d->nfbs; i++) {
         uint32_t id = d->fbs[i].fb_id;
+        if (d->fbs[i].px)
+            munmap(d->fbs[i].px, d->fbs[i].size);
         xioctl(d->fd, DRM_IOCTL_MODE_RMFB, &id);
         struct drm_mode_destroy_dumb dd = {.handle = d->fbs[i].handle};
         xioctl(d->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dd);
@@ -539,6 +582,16 @@ __attribute__((visibility("default"))) int drmModeAtomicCommit(int fd, struct at
     if (now - S.last_check_ms >= 100) {
         S.last_check_ms = now;
         update_want();
+        struct stat st;
+        int64_t m = stat(S.gen, &st) == 0 ? (int64_t)st.st_mtim.tv_sec * 1000000000LL + st.st_mtim.tv_nsec : 0;
+        if (m != S.gen_mtime) {
+            S.gen_mtime = m;
+            S.repaint = 1;
+        }
+    }
+    if (S.repaint && S.want && S.layout_ok == 1) {
+        S.repaint = 0;
+        repaint_all(); /* đồng hồ / ảnh màn che vừa đổi: vẽ lại tại chỗ các khung đang dùng */
     }
     if (S.layout_ok == 1) {
         d = get_dev(fd);
@@ -687,6 +740,8 @@ __attribute__((constructor)) static void shim_init(void)
     snprintf(S.flag, sizeof S.flag, "%s/blank", dir);
     snprintf(S.status, sizeof S.status, "%s/shim-status", dir);
     snprintf(S.overlay, sizeof S.overlay, "%s/shield.png", dir);
+    snprintf(S.rundir, sizeof S.rundir, "%s", dir);
+    snprintf(S.gen, sizeof S.gen, "%s/shield.gen", dir);
     unlink(S.flag); /* phiên mới luôn bắt đầu ở trạng thái bình thường */
     if (access(disabled, F_OK) == 0) {
         logf_("pid %d: có %s -> không hoạt động", getpid(), disabled);
@@ -736,13 +791,16 @@ int main(int argc, char **argv)
         printf("plane %u %-7s prop FB_ID=%u CRTC_ID=%u SRC_W=%u FB_DAMAGE_CLIPS=%u\n", p->id, ptype(p->type), p->fb,
                p->crtc, p->src_w, p->damage);
     }
-    if (argc > 3) { /* shield-selftest <card> <shield.png> <out.ppm>: thử dán ảnh chữ lên khung trắng */
+    if (argc > 3) { /* shield-selftest <card> <thư-mục-run> <out.ppm> [WxH]: vẽ khung màn che như shim */
         dlopen("libcairo.so.2", RTLD_NOW | RTLD_GLOBAL);
-        snprintf(S.overlay, sizeof S.overlay, "%s", argv[2]);
-        uint32_t W = 1920, H = 1080, pitch = W * 4;
+        snprintf(S.rundir, sizeof S.rundir, "%s", argv[2]);
+        snprintf(S.overlay, sizeof S.overlay, "%s/shield.png", argv[2]);
+        uint32_t W = 1920, H = 1080;
+        if (argc > 4)
+            sscanf(argv[4], "%ux%u", &W, &H);
+        uint32_t pitch = W * 4;
         uint8_t *buf = malloc((size_t)pitch * H);
-        memset(buf, 0xFF, (size_t)pitch * H);
-        blit_overlay(buf, pitch, W, H);
+        paint_fb(buf, pitch, W, H, (size_t)pitch * H);
         FILE *o = fopen(argv[3], "wb");
         fprintf(o, "P6\n%u %u\n255\n", W, H);
         for (size_t i = 0; i < (size_t)W * H; i++) {
