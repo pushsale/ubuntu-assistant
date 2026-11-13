@@ -56,6 +56,7 @@ typedef int (*commit_fn)(int, struct atomic_req *, uint32_t, void *);
 #define MAX_DEVS 4
 #define MAX_PLANES 64
 #define MAX_FBS 16
+#define FBSZ_CACHE 16
 #define MAX_CHANGES 128
 #define DETAIL_COMMITS 40
 
@@ -78,6 +79,8 @@ struct dev {
     int used, fd, nplanes;
     struct plane planes[MAX_PLANES];
     uint32_t cursor_w, cursor_h;
+    struct { uint32_t id, w, h; } fbsz[FBSZ_CACHE]; /* kích thước FB của Mutter đã hỏi (GETFB2) */
+    int fbsz_next;
     int nfbs;
     struct fbent fbs[MAX_FBS];
     uint64_t commits, swapped;
@@ -423,7 +426,10 @@ static uint32_t get_fb(struct dev *d, uint32_t w, uint32_t h, int transparent)
 {
     for (int i = 0; i < d->nfbs; i++) {
         struct fbent *e = &d->fbs[i];
-        if (e->transparent == transparent && e->w >= w && e->h >= h)
+        /* FB cursor phải đúng kích thước (i915 đòi stride == chiều rộng cursor * 4);
+         * FB màn che lớn hơn vùng nguồn thì dùng lại được. */
+        if (e->transparent == transparent &&
+            (transparent ? (e->w == w && e->h == h) : (e->w >= w && e->h >= h)))
             return e->fb_id;
     }
     if (d->nfbs >= MAX_FBS)
@@ -453,6 +459,40 @@ static void free_fbs(struct dev *d)
     d->nfbs = 0;
 }
 #endif
+
+/* Kích thước thật của framebuffer Mutter vừa giao (DRM_IOCTL_MODE_GETFB2), có cache theo fb_id.
+ * GETFB2 luôn tạo handle GEM mới cho bộ nhớ của FB (kể cả khi đã có handle khác): phải đóng ngay,
+ * mỗi handle khác nhau đúng một lần. Trả 0 nếu kernel không trả lời được. */
+static int fb_size(struct dev *d, uint32_t fb_id, uint32_t *w, uint32_t *h)
+{
+    for (int i = 0; i < FBSZ_CACHE; i++)
+        if (d->fbsz[i].id == fb_id) {
+            *w = d->fbsz[i].w;
+            *h = d->fbsz[i].h;
+            return 1;
+        }
+    struct drm_mode_fb_cmd2 f;
+    memset(&f, 0, sizeof f);
+    f.fb_id = fb_id;
+    if (xioctl(d->fd, DRM_IOCTL_MODE_GETFB2, &f) || !f.width || !f.height)
+        return 0;
+    for (int k = 0; k < 4 && f.handles[k]; k++) {
+        int seen = 0;
+        for (int j = 0; j < k; j++)
+            seen |= f.handles[j] == f.handles[k];
+        if (!seen) {
+            struct drm_gem_close gc = {.handle = f.handles[k]};
+            xioctl(d->fd, DRM_IOCTL_GEM_CLOSE, &gc);
+        }
+    }
+    d->fbsz[d->fbsz_next].id = fb_id;
+    d->fbsz[d->fbsz_next].w = f.width;
+    d->fbsz[d->fbsz_next].h = f.height;
+    d->fbsz_next = (d->fbsz_next + 1) % FBSZ_CACHE;
+    *w = f.width;
+    *h = f.height;
+    return 1;
+}
 
 /* Vùng nguồn (SRC_*) plane đọc từ framebuffer, đơn vị pixel, làm tròn lên. */
 static void src_extent(struct dev *d, struct atomic_req *req, struct plane *p, uint32_t *w, uint32_t *h)
@@ -663,11 +703,20 @@ __attribute__((visibility("default"))) int drmModeAtomicCommit(int fd, struct at
                         continue;
                     if (it->property_id == p->fb && it->value != 0) {
                         uint32_t w, h;
-                        src_extent(d, req, p, &w, &h);
                         int tr = p->type == PT_CURSOR;
                         if (tr) {
-                            if (w < d->cursor_w) w = d->cursor_w;
-                            if (h < d->cursor_h) h = d->cursor_h;
+                            /* FB cursor trong suốt cùng kích thước FB cursor gốc: driver đã nhận FB gốc
+                             * thì nhận FB này (i915 từ chối cursor có stride khác chiều rộng cursor;
+                             * Mutter dùng 64x64 trên Intel, 256x256 trên NVIDIA). */
+                            if (!fb_size(d, (uint32_t)it->value, &w, &h)) {
+                                src_extent(d, req, p, &w, &h); /* dự phòng: vùng nguồn, tối đa bằng cursor cap */
+                                if (w > d->cursor_w || h > d->cursor_h) {
+                                    w = d->cursor_w;
+                                    h = d->cursor_h;
+                                }
+                            }
+                        } else {
+                            src_extent(d, req, p, &w, &h);
                         }
                         uint32_t fb = get_fb(d, w, h, tr);
                         if (!fb)
@@ -1018,6 +1067,12 @@ int main(int argc, char **argv)
     }
     uint32_t white = get_fb(d, 1920, 1080, 0);
     uint32_t clear = get_fb(d, d->cursor_w, d->cursor_h, 1);
+    /* FB cursor phải đúng kích thước FB gốc (Intel i915): tạo FB 64x64, đọc lại bằng GETFB2, get_fb phải trả FB đúng cỡ */
+    uint32_t c64 = get_fb(d, 64, 64, 1), fw = 0, fh = 0;
+    int sz = fb_size(d, c64, &fw, &fh);
+    int exact = get_fb(d, 64, 64, 1) == c64 && get_fb(d, d->cursor_w, d->cursor_h, 1) == clear;
+    printf("fb_size(FB %u)=%s %ux%u, chọn FB cursor đúng cỡ: %s\n", c64, sz ? "OK" : "lỗi", fw, fh, exact ? "OK" : "SAI");
+    ok = ok && sz && fw == 64 && fh == 64 && exact;
     printf("layout=%s white_fb=%u cursor_fb=%u %s\n", ok ? "OK" : "FAIL", white, clear, S.last_err);
     free_fbs(d);
     close(fd);

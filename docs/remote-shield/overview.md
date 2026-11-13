@@ -69,6 +69,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 | 2026-11-13 | Đóng gói `remote-shield-2.0.tar.gz` để cài lên máy Ubuntu khác |
 | 2026-11-13 | Remote được cả khi máy đang khóa, không cần cài thêm extension nào |
 | 2026-11-13 | Màn che giống hệt màn khóa; người tại máy bấm là ngắt remote và nhập mật khẩu vào máy |
+| 2026-11-13 | Sửa lỗi máy card Intel không che được màn hình (RDP vào bị ngắt ngay) |
 | 2026-11-13 | Sửa dồn cửa sổ từ màn phụ (trước đó báo đã dồn nhưng cửa sổ Wayland vẫn nằm ở màn phụ); dồn cả cửa sổ mở trong lúc remote |
 | 2026-11-13 | Chặn bàn phím, chuột tại máy ở tầng thấp hơn (trước đó phím tại máy vẫn lọt vào app và bấm tại máy chỉ thỉnh thoảng ngắt được remote); giữ phiên remote khi người remote khóa máy |
 
@@ -96,7 +97,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 ## Giới hạn hiện tại
 
 - Chỉ chạy trên GNOME Shell 50, phiên Wayland. Bản GNOME khác phải cài với `--force` và tự kiểm tra.
-- Mới thử với card NVIDIA. Card Intel/AMD về lý thuyết chạy được nhưng chưa kiểm chứng.
+- Đã chạy với card NVIDIA (GTX 1660) và Intel UHD 730 (i915, sau bản sửa cursor #28 theo báo cáo từ máy đó). Card AMD chưa kiểm chứng.
 - Phụ thuộc bố cục bên trong của libdrm. Bản libdrm khác bố cục thì shim tự tắt và Remote Shield sẽ ngắt mọi phiên remote (an toàn nhưng không remote được).
 - RDP phải ở chế độ chỉ gửi màn hình chính (`mirror-primary`); không hỗ trợ gửi nhiều màn hình.
 - Thay đổi thư viện shim cần đăng xuất rồi đăng nhập lại.
@@ -106,7 +107,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 
 ## Roadmap (tạm dự kiến)
 
-- Thử trên máy dùng card Intel/AMD.
+- Thử trên máy dùng card AMD.
 - Cân nhắc đóng gói `.deb` nếu cần cài cho nhiều máy, nhiều user.
 
 ## Tài liệu liên quan

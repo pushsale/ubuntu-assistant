@@ -137,24 +137,25 @@ Dồn cửa sổ (#26):
 
 | Bước | Code |
 |---|---|
-| Constructor: bỏ mình khỏi LD_PRELOAD, chỉ chạy khi `comm == gnome-shell`, xoá cờ cũ (`blank`, `input-block`), kill switch, guard | `shim_init` [shield-shim.c:917](../../remote-shield/shim/shield-shim.c) |
-| Destructor: xoá marker (thoát bình thường không tính là sự cố) | `shim_fini` [shield-shim.c:964](../../remote-shield/shim/shield-shim.c) |
-| Hook giao khung | `drmModeAtomicCommit` [shield-shim.c:607](../../remote-shield/shim/shield-shim.c) |
-| Kiểm tra bố cục `drmModeAtomicReq` lúc chạy | `check_layout` [shield-shim.c:496](../../remote-shield/shim/shield-shim.c) |
-| Đọc cờ, bật/tắt, marker/guard | `update_want` [shield-shim.c:522](../../remote-shield/shim/shield-shim.c) |
-| Ghi trạng thái (nguyên tử: .tmp rồi rename) | `write_status` [shield-shim.c:552](../../remote-shield/shim/shield-shim.c) |
-| Liệt kê plane, thuộc tính FB_ID/CRTC/SRC_*, cursor cap | `load_planes` [shield-shim.c:215](../../remote-shield/shim/shield-shim.c), `get_dev` [shield-shim.c:259](../../remote-shield/shim/shield-shim.c) |
-| Tạo dumb buffer + framebuffer (màn che XRGB8888, giữ map để vẽ lại / trong suốt ARGB8888), cache theo kích thước | `create_fb` [shield-shim.c:371](../../remote-shield/shim/shield-shim.c), `get_fb` [shield-shim.c:422](../../remote-shield/shim/shield-shim.c) |
-| Kích thước khung lấy từ SRC_W/SRC_H trong chính request (hoặc giá trị cũ của plane) | `src_extent` [shield-shim.c:458](../../remote-shield/shim/shield-shim.c) |
-| Nội dung khung: `shield-<w>x<h>.png` nếu có, không thì nền trắng + `shield.png` ở giữa (cairo lấy bằng dlsym) | `paint_fb` [shield-shim.c:344](../../remote-shield/shim/shield-shim.c), `blit_png` [shield-shim.c:300](../../remote-shield/shim/shield-shim.c) |
-| `shield.gen` đổi (kiểm tra mỗi 100 ms) → vẽ lại tại chỗ mọi khung màn che | `repaint_all` [shield-shim.c:357](../../remote-shield/shim/shield-shim.c) |
-| Hook đọc input thật: bỏ sự kiện khi đang chặn | `libinput_get_event` [shield-shim.c:856](../../remote-shield/shim/shield-shim.c), `input_drop` [shield-shim.c:810](../../remote-shield/shim/shield-shim.c) |
-| Lấy hàm libinput bằng dlsym; đọc cờ `input-block` (≤50 ms/lần, quá 6 s là cũ); báo cú bấm | `input_init` [shield-shim.c:743](../../remote-shield/shim/shield-shim.c), `input_update` [shield-shim.c:776](../../remote-shield/shim/shield-shim.c), `input_report` [shield-shim.c:792](../../remote-shield/shim/shield-shim.c) |
-| Chương trình tự kiểm tra (`-DSELFTEST`) | `main` [shield-shim.c:972](../../remote-shield/shim/shield-shim.c) |
+| Constructor: bỏ mình khỏi LD_PRELOAD, chỉ chạy khi `comm == gnome-shell`, xoá cờ cũ (`blank`, `input-block`), kill switch, guard | `shim_init` [shield-shim.c:966](../../remote-shield/shim/shield-shim.c) |
+| Destructor: xoá marker (thoát bình thường không tính là sự cố) | `shim_fini` [shield-shim.c:1013](../../remote-shield/shim/shield-shim.c) |
+| Hook giao khung | `drmModeAtomicCommit` [shield-shim.c:647](../../remote-shield/shim/shield-shim.c) |
+| Kiểm tra bố cục `drmModeAtomicReq` lúc chạy | `check_layout` [shield-shim.c:536](../../remote-shield/shim/shield-shim.c) |
+| Đọc cờ, bật/tắt, marker/guard | `update_want` [shield-shim.c:562](../../remote-shield/shim/shield-shim.c) |
+| Ghi trạng thái (nguyên tử: .tmp rồi rename) | `write_status` [shield-shim.c:592](../../remote-shield/shim/shield-shim.c) |
+| Liệt kê plane, thuộc tính FB_ID/CRTC/SRC_*, cursor cap | `load_planes` [shield-shim.c:218](../../remote-shield/shim/shield-shim.c), `get_dev` [shield-shim.c:262](../../remote-shield/shim/shield-shim.c) |
+| Tạo dumb buffer + framebuffer (màn che XRGB8888, giữ map để vẽ lại / trong suốt ARGB8888), cache theo kích thước | `create_fb` [shield-shim.c:374](../../remote-shield/shim/shield-shim.c), `get_fb` [shield-shim.c:425](../../remote-shield/shim/shield-shim.c) |
+| FB cursor trong suốt: đúng kích thước FB cursor gốc, đọc bằng `DRM_IOCTL_MODE_GETFB2` (cache theo fb_id, đóng ngay handle GEM mới); không đọc được thì dùng vùng nguồn, tối đa cursor cap | `fb_size` [shield-shim.c:466](../../remote-shield/shim/shield-shim.c) |
+| Kích thước khung màn che lấy từ SRC_W/SRC_H trong chính request (hoặc giá trị cũ của plane) | `src_extent` [shield-shim.c:498](../../remote-shield/shim/shield-shim.c) |
+| Nội dung khung: `shield-<w>x<h>.png` nếu có, không thì nền trắng + `shield.png` ở giữa (cairo lấy bằng dlsym) | `paint_fb` [shield-shim.c:347](../../remote-shield/shim/shield-shim.c), `blit_png` [shield-shim.c:303](../../remote-shield/shim/shield-shim.c) |
+| `shield.gen` đổi (kiểm tra mỗi 100 ms) → vẽ lại tại chỗ mọi khung màn che | `repaint_all` [shield-shim.c:360](../../remote-shield/shim/shield-shim.c) |
+| Hook đọc input thật: bỏ sự kiện khi đang chặn | `libinput_get_event` [shield-shim.c:905](../../remote-shield/shim/shield-shim.c), `input_drop` [shield-shim.c:859](../../remote-shield/shim/shield-shim.c) |
+| Lấy hàm libinput bằng dlsym; đọc cờ `input-block` (≤50 ms/lần, quá 6 s là cũ); báo cú bấm | `input_init` [shield-shim.c:792](../../remote-shield/shim/shield-shim.c), `input_update` [shield-shim.c:825](../../remote-shield/shim/shield-shim.c), `input_report` [shield-shim.c:841](../../remote-shield/shim/shield-shim.c) |
+| Chương trình tự kiểm tra (`-DSELFTEST`) | `main` [shield-shim.c:1021](../../remote-shield/shim/shield-shim.c) |
 
 Thuật toán trong hook, với mỗi lần commit:
 1. Đọc cờ (tối đa 1 lần / 100 ms).
-2. Nếu đang che và không có guard hay `swap_failed`: duyệt `req->items`. Item là `FB_ID` của plane, giá trị khác 0 → thay bằng FB màn che (cursor: FB trong suốt, tối thiểu bằng cursor cap 256×256). Nếu plane có `FB_DAMAGE_CLIPS` thì đặt về 0 (card này không có).
+2. Nếu đang che và không có guard hay `swap_failed`: duyệt `req->items`. Item là `FB_ID` của plane, giá trị khác 0 → thay bằng FB màn che (cursor: FB trong suốt **cùng kích thước FB cursor gốc**, vd 256×256 trên NVIDIA, 64×64 trên Intel). Nếu plane có `FB_DAMAGE_CLIPS` thì đặt về 0 (card này không có).
 3. Gọi hàm thật, rồi luôn khôi phục giá trị gốc trong `req`, vì Mutter tái sử dụng request.
 4. Lỗi (trừ EBUSY/EAGAIN): gửi lại khung gốc, đặt `swap_failed = 1` và ngừng thay khung tới khi cờ tắt rồi bật lại.
 5. Thành công lần đầu sau khi bật cờ: ghi status ngay để extension xác nhận nhanh.
@@ -263,6 +264,7 @@ Thiết lập hệ thống liên quan:
 | 2026-11-13 | #16: `install.sh` hợp nhất (kiểm tra máy, `--rdp`, `--remote-login`, `--force`); drop-in chuyển sang template `org.gnome.Shell@.service.d`; `package.sh` tạo gói tar.gz |
 | 2026-11-13 | #20: màn che giống hệt màn khóa (hình nền mờ, giờ chạy, ngày, gợi ý); bấm tại máy → ngắt remote, khóa, hiện ô mật khẩu; shim vẽ ảnh toàn màn theo kích thước và vẽ lại khi `shield.gen` đổi |
 | 2026-11-13 | #24: sửa ngắt remote từ tại chỗ bị kéo rèm 2 lần (gây đơ bàn phím / bộ gõ sau khi mở khóa) |
+| 2026-11-13 | #28: sửa lỗi card Intel (i915) từ chối FB cursor trong suốt → không che được, RDP bị ngắt (báo cáo từ máy Intel UHD 730). FB cursor giờ lấy đúng kích thước FB gốc qua `GETFB2`; selftest kiểm tra thêm |
 | 2026-11-13 | #26: dồn cửa sổ thật sự hoạt động: đặt bằng toạ độ thay cho `move_to_monitor` (không chuyển được cửa sổ Wayland), co kích thước vừa màn chính, đưa vào workspace đang xem; theo dõi tiếp cửa sổ mở mới / bị chuyển sang màn phụ trong lúc remote |
 | 2026-11-13 | #25: chặn input thật chuyển xuống shim (hook `libinput_get_event`): trước đó bộ lọc Clutter đứng sau bộ lọc của Mutter nên phím/chuột tại máy vẫn lọt vào app và bấm tại máy chỉ thỉnh thoảng ngắt được remote; con trỏ thật nay cũng đứng yên. Giữ phiên remote qua lần GNOME tắt/bật lại extension khi khóa máy; sửa lỗi `this._timers is null` |
 | 2026-11-13 | #19: tích hợp remote khi màn hình khóa (`allowWhenLocked`, mặc định bật); `install.sh` gỡ extension Allow Locked Remote Desktop (đã gỡ trên máy này) |
@@ -364,6 +366,7 @@ Trạng thái runtime (2026-11-13):
 |---|---|
 | Che ở tầng giao khung KMS, không phủ actor trong GNOME | RDP lấy ảnh từ stage; phủ trong stage thì người remote cũng thấy trắng (đã thử ở Remote Curtain) |
 | Hook `drmModeAtomicCommit` bằng LD_PRELOAD, không vá Mutter / module kernel / compositor riêng | Không cần root, không đụng file hệ thống, gỡ bằng xoá 1 file drop-in, sống qua cập nhật Mutter miễn libdrm giữ ABI |
+| FB cursor thay thế lấy kích thước từ FB gốc (GETFB2), không tự chọn | Mỗi driver có ràng buộc cursor riêng (i915: stride = rộng × 4; NVIDIA: cỡ cố định); FB gốc chắc chắn hợp lệ với driver đang chạy |
 | Đọc struct nội bộ libdrm, có `check_layout` lúc chạy | `drmModeAtomicReq` là kiểu mờ; kiểm tra bằng chính alloc/add của libdrm, sai bố cục thì chỉ log, không thay khung |
 | Fail-closed mặc định | Mục đích là không để lộ màn hình; thà ngắt remote còn hơn để người tại chỗ thấy |
 | Khoá máy trước, 800 ms sau mới xoá cờ | Màn hình thật không được lộ desktop dù một khung |
@@ -398,6 +401,7 @@ Trạng thái runtime (2026-11-13):
 | Menu Ubuntu và HUD nhảy sang màn trái | Màn chính bị đổi sang HDMI-3 (một màn mất tín hiệu thoáng qua, Mutter lưu lại monitors.xml); không do Remote Shield | Đặt lại DP-2 qua `ApplyMonitorsConfig`. RDP mirror-primary gửi đúng màn chính nên màn chính sai thì người remote xem sai màn |
 | Người remote không thấy app ở màn phụ | `mirror-primary` chỉ gửi màn chính | `gatherWindows` |
 | Log báo `đã dồn 1 cửa sổ` nhưng người remote vẫn không thấy cửa sổ | `meta_window_move_to_monitor()` không chuyển cửa sổ Wayland (Claude/Electron) sang màn khác, chỉ xê dịch vài px, không báo lỗi. Cửa sổ mở trong lúc remote ở màn phụ thì trước đây không được dồn | Đặt bằng `move_resize_frame` theo toạ độ; theo dõi `window-created` / `window-entered-monitor` (#26). Bài học: sau khi di chuyển cửa sổ, kiểm tra lại `get_monitor()` / `get_frame_rect()` chứ không tin lời gọi |
+| Card Intel: `shieldctl test` không che được, RDP vào là bị ngắt; log shim `driver từ chối khung thay thế: Invalid argument`; kernel (`drm.debug=0x14`): `i9xx_check_cursor … invalid cursor stride (1024) (cursor width 64)` | Shim nới FB cursor trong suốt lên cursor cap 256×256 (stride 1024), trong khi Mutter trên Intel dùng cursor 64×64; i915 bắt buộc stride FB cursor = chiều rộng cursor × 4. `get_fb` còn dùng lại FB lớn hơn | FB cursor cùng kích thước FB gốc (`fb_size`, GETFB2); `get_fb` chỉ dùng lại FB cursor đúng cỡ (#28). Bài học: FB thay thế nên giống FB gốc về kích thước/định dạng, vì driver đã chấp nhận FB gốc |
 | Chữ trên ảnh màn che có viền màu (cam/xanh) khi thu nhỏ | Cairo khử răng cưa theo subpixel trên surface RGB24 | Vẽ trên surface ARGB32 (khử răng cưa thang xám như shell); shim chép được cả ARGB32 lẫn RGB24 |
 | Đồng hồ trên màn che đứng yên | Shim dựng framebuffer một lần và trước đây `munmap` ngay | Giữ map; extension vẽ lại đầu mỗi phút + đổi `shield.gen`; shim kiểm tra mỗi 100 ms trong lúc giao khung và vẽ lại tại chỗ; extension `queue_redraw` 2 lần để chắc có lần giao khung |
 | Dấu hai chấm giờ trông khác `:` | `GnomeDesktop.WallClock` dùng ký tự U+2236 (∶) như màn khóa thật | Đúng ý đồ; không thay bằng `:` |

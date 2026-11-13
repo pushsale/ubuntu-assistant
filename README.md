@@ -18,7 +18,7 @@ Hai phần độc lập, cài phần nào cũng được.
 | | |
 |---|---|
 | Hệ điều hành | Ubuntu dùng GNOME Shell 50, phiên **Wayland** (đã thử trên Ubuntu 26.04) |
-| Card đồ hoạ | Đã thử với NVIDIA (driver độc quyền). Intel/AMD về lý thuyết chạy được nhưng chưa kiểm chứng |
+| Card đồ hoạ | Đã chạy với NVIDIA (driver độc quyền) và Intel (i915). AMD về lý thuyết chạy được nhưng chưa kiểm chứng |
 | Gói cần có | `git`, `gcc`, `gnome-remote-desktop` (Ubuntu Desktop có sẵn) |
 | Quyền | Cài bằng user dùng máy, **không chạy bằng sudo**. Chỉ bật Remote Login mới hỏi mật khẩu sudo |
 
