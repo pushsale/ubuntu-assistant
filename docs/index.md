@@ -23,11 +23,11 @@ Mỗi thư mục có `overview.md` (cho người không đọc code) và `system
 
 ## Thứ tự đọc cho session mới
 
-1. Memory của project: `/home/luannt/.claude/projects/-home-luannt-works-claude-project-Ubuntu-Assistant/memory/MEMORY.md`
+1. Memory của project: memory Claude Code của project (nằm ngoài repo, trên máy phát triển: `~/.claude/projects/<thư-mục-project>/memory/`)
 2. File này
 3. `<feature>/system.md` của phần cần làm (chưa có `project/` vì chưa có kiến trúc dùng chung đáng kể)
 
 ## Liên hệ
 
-- Chủ dự án: luannt (máy `luannt-pc`). Mọi thay đổi do Claude Code thực hiện theo yêu cầu trực tiếp của chủ dự án.
-- Repo: `github.com/pushsale/ubuntu-assistant` (private, nhánh `main`). Thư mục gốc repo là `Ubuntu Assistant/`.
+- Mọi thay đổi do Claude Code thực hiện theo yêu cầu trực tiếp của chủ dự án.
+- Repo: `github.com/pushsale/ubuntu-assistant` (public, nhánh `main`).

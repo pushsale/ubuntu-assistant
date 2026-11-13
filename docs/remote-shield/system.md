@@ -76,7 +76,7 @@ Vì sao RDP không bị che: gnome-remote-desktop lấy ảnh từ stage của M
 
 ## 3. Luồng chi tiết (tham chiếu code)
 
-Đường dẫn tính từ gốc repo `Ubuntu Assistant/`.
+Đường dẫn tính từ gốc repo.
 
 ### 3.1 Extension
 
@@ -319,7 +319,7 @@ Sau khi cài:
 ## 12. Onboarding checklist cho session mới
 
 Thứ tự đọc:
-1. Memory: `/home/luannt/.claude/projects/-home-luannt-works-claude-project-Ubuntu-Assistant/memory/MEMORY.md` và `remote-shield-project.md`
+1. Memory: memory Claude Code của project (nằm ngoài repo, trên máy phát triển: `~/.claude/projects/<thư-mục-project>/memory/`)
 2. [../index.md](../index.md)
 3. File này
 4. `remote-shield/remote-shield@ubuntu-assistant/core.js`, rồi `remote-shield/shim/shield-shim.c` nếu đụng tầng KMS
@@ -342,7 +342,7 @@ Code path cheatsheet:
 Lệnh hay dùng:
 
 ```bash
-cd "/home/luannt/works/claude-project/Ubuntu Assistant/remote-shield"
+cd remote-shield   # từ thư mục gốc repo
 ./install.sh && journalctl -b --since -1min | grep remote-shield
 shieldctl status; shieldctl log 30; shieldctl test 10
 gnome-extensions info remote-shield@ubuntu-assistant
@@ -414,12 +414,12 @@ Trạng thái runtime (2026-11-13):
 
 ## 15. Memory files & external resources
 
-- Memory project: `/home/luannt/.claude/projects/-home-luannt-works-claude-project-Ubuntu-Assistant/memory/remote-shield-project.md`
-- Mã nguồn: `/home/luannt/works/claude-project/Ubuntu Assistant/remote-shield/`
-- Thư viện đã cài: `/home/luannt/.local/lib/remote-shield/shield-shim.so`
-- Drop-in: `/home/luannt/.config/systemd/user/org.gnome.Shell@.service.d/remote-shield.conf`
-- Extension đã cài: `/home/luannt/.local/share/gnome-shell/extensions/remote-shield@ubuntu-assistant/`
-- Log shim: `/home/luannt/.cache/remote-shield/shim.log`
-- Cấu hình màn hình: `/home/luannt/.config/monitors.xml`
-- Chứng chỉ RDP user: `/home/luannt/.local/share/gnome-remote-desktop/certificates/`
+- Memory project: memory Claude Code của project (nằm ngoài repo, trên máy phát triển: `~/.claude/projects/<thư-mục-project>/memory/`)
+- Mã nguồn: `remote-shield/` trong repo
+- Thư viện đã cài: `~/.local/lib/remote-shield/shield-shim.so`
+- Drop-in: `~/.config/systemd/user/org.gnome.Shell@.service.d/remote-shield.conf`
+- Extension đã cài: `~/.local/share/gnome-shell/extensions/remote-shield@ubuntu-assistant/`
+- Log shim: `~/.cache/remote-shield/shim.log`
+- Cấu hình màn hình: `~/.config/monitors.xml`
+- Chứng chỉ RDP user: `~/.local/share/gnome-remote-desktop/certificates/`
 - Tài liệu tham khảo: GNOME Remote Desktop (`man grdctl`), Linux DRM KMS atomic API (`include/uapi/drm/drm_mode.h`), libdrm `xf86drmMode.c` (định nghĩa `drmModeAtomicReq`)

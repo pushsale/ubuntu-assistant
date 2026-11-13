@@ -98,4 +98,4 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
 - Chi tiết kỹ thuật: [system.md](system.md)
 - Mục lục: [../index.md](../index.md)
 - Feature cùng dự án: [Remote Shield](../remote-shield/overview.md) (độc lập)
-- Liên hệ: chủ dự án luannt
+- Liên hệ: chủ dự án

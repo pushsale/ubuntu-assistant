@@ -47,7 +47,7 @@ extension.js ── import('./core.js?v=<Date.now()>') ──► HudCore (core.j
 
 ## 3. Luồng chi tiết (tham chiếu code)
 
-Đường dẫn tính từ gốc repo `Ubuntu Assistant/`.
+Đường dẫn tính từ gốc repo.
 
 | Bước | Code |
 |---|---|
@@ -214,7 +214,7 @@ system-hud/
 ## 12. Onboarding checklist cho session mới
 
 Thứ tự đọc:
-1. Memory: `/home/luannt/.claude/projects/-home-luannt-works-claude-project-Ubuntu-Assistant/memory/MEMORY.md`
+1. Memory: memory Claude Code của project (nằm ngoài repo, trên máy phát triển: `~/.claude/projects/<thư-mục-project>/memory/`)
 2. [../index.md](../index.md)
 3. File này
 4. `core.js`, rồi `hud.js` (phần theme cần sửa)
@@ -234,7 +234,7 @@ Code path cheatsheet:
 Lệnh hay dùng:
 
 ```bash
-cd "/home/luannt/works/claude-project/Ubuntu Assistant/system-hud"
+cd system-hud   # từ thư mục gốc repo
 ./install.sh && gnome-extensions info system-hud@ubuntu-assistant | grep State
 ./hud-config.sh
 gjs -m tools/preview.js /tmp/hud-preview 10
@@ -279,8 +279,8 @@ Trạng thái runtime (2026-11-13):
 
 ## 15. Memory files & external resources
 
-- Memory: `/home/luannt/.claude/projects/-home-luannt-works-claude-project-Ubuntu-Assistant/memory/MEMORY.md`
-- Mã nguồn: `/home/luannt/works/claude-project/Ubuntu Assistant/system-hud/`
-- Extension đã cài: `/home/luannt/.local/share/gnome-shell/extensions/system-hud@ubuntu-assistant/`
-- Repo: `github.com/pushsale/ubuntu-assistant` (private)
+- Memory: memory Claude Code của project (nằm ngoài repo, trên máy phát triển: `~/.claude/projects/<thư-mục-project>/memory/`)
+- Mã nguồn: `system-hud/` trong repo
+- Extension đã cài: `~/.local/share/gnome-shell/extensions/system-hud@ubuntu-assistant/`
+- Repo: `github.com/pushsale/ubuntu-assistant` (public)
 - Tham khảo: GJS guide (gjs.guide), Cairo/Pango API, `man nvidia-smi`, `Documentation/hwmon` của kernel

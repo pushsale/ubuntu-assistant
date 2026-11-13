@@ -83,7 +83,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 
 - Khoảng 2.250 dòng code: shim C 1.026 dòng, extension 944 dòng JS (core 703, overlay 206, extension 35), script cài/gỡ/đóng gói/xem trước khoảng 270 dòng.
 - Gói cài 64 KB.
-- Đang chạy trên 1 máy (`luannt-pc`): card NVIDIA GTX 1660, 2 màn hình Dell (DP-2 chính, HDMI-3 phụ).
+- Đang chạy trên 1 máy: card NVIDIA GTX 1660, 2 màn hình Dell (DP-2 chính, HDMI-3 phụ).
 - Đã thử: Desktop Sharing (RDP vào phiên đang mở) và Remote Login (RDP khi chưa đăng nhập) đều hoạt động.
 
 ## Đặc điểm nổi bật
@@ -114,4 +114,4 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 - Chi tiết kỹ thuật: [system.md](system.md)
 - Mục lục: [../index.md](../index.md)
 - Hướng dẫn cài cho người dùng cuối: `remote-shield/packaging/README.txt`
-- Liên hệ: chủ dự án luannt
+- Liên hệ: chủ dự án
