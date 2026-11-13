@@ -1,13 +1,31 @@
 #!/usr/bin/env bash
-# Cài Sci-Fi HUD vào thư mục extension của user và bật nó.
-# Dùng: ./install.sh [theme]     theme: orbital | card | tactical | terminal
+# Cài System HUD vào thư mục extension của user và bật nó.
+# Dùng: ./install.sh [theme]     theme: orbital | orbitalLight | card | tactical | terminal
 set -euo pipefail
 
-UUID="scifi-hud@ubuntu-assistant"
+UUID="system-hud@ubuntu-assistant"
 SRC="$(cd "$(dirname "$0")" && pwd)/$UUID"
 DEST="$HOME/.local/share/gnome-shell/extensions/$UUID"
+EXT_ROOT="$HOME/.local/share/gnome-shell/extensions"
 
+# Đổi tên 2026-11-13: Sci-Fi HUD (scifi-hud@ubuntu-assistant) -> System HUD. Mang cấu hình cũ sang.
+# Bản cũ vẫn chạy trong bộ nhớ tới khi đăng xuất (trên Wayland shell chưa nạp được UUID mới),
+# nên chỉ gỡ nó khỏi danh sách bật khi bản mới đã ACTIVE (xem cuối file).
+OLD_UUID="scifi-hud@ubuntu-assistant"
 mkdir -p "$DEST"
+if [ -d "$EXT_ROOT/$OLD_UUID" ]; then
+    [ -f "$DEST/config.json" ] || cp "$EXT_ROOT/$OLD_UUID/config.json" "$DEST/" 2>/dev/null || true
+    rm -rf "${EXT_ROOT:?}/$OLD_UUID"
+    echo "Đã chuyển cấu hình từ $OLD_UUID sang $UUID và xoá thư mục cũ."
+fi
+drop_old_uuid() {
+    local current new
+    current=$(gsettings get org.gnome.shell enabled-extensions)
+    [[ "$current" == *"$OLD_UUID"* ]] || return 0
+    new=$(python3 -c "import ast,sys; print(str([x for x in ast.literal_eval(sys.argv[1].replace('@as ','')) if x!=sys.argv[2]]))" "$current" "$OLD_UUID")
+    gsettings set org.gnome.shell enabled-extensions "$new"
+}
+
 cp "$SRC"/{metadata.json,extension.js,core.js,sensors.js,hud.js,animator.js} "$DEST"/
 # giữ config.json đã chỉnh trước đó, chỉ chép nếu chưa có
 [ -f "$DEST/config.json" ] || cp "$SRC/config.json" "$DEST/"
@@ -36,6 +54,7 @@ if gnome-extensions info "$UUID" >/dev/null 2>&1; then
     for _ in $(seq 50); do [ "$(state)" = "ACTIVE" ] && break; sleep 0.1; done
     [ "$(state)" = "ACTIVE" ] || echo "Cảnh báo: $UUID chưa ACTIVE (trạng thái: $(state))." >&2
     echo "Đã nạp lại $UUID."
+    [ "$(state)" = "ACTIVE" ] && drop_old_uuid
 else
     current=$(gsettings get org.gnome.shell enabled-extensions)
     if [[ "$current" != *"$UUID"* ]]; then
@@ -46,5 +65,8 @@ else
         fi
     fi
     echo "Đã cài $UUID. Đăng xuất rồi đăng nhập lại để HUD xuất hiện."
+    if [[ "$(gsettings get org.gnome.shell enabled-extensions)" == *"$OLD_UUID"* ]]; then
+        echo "HUD tên cũ vẫn chạy tới khi đăng xuất. Sau khi đăng nhập lại, chạy ./install.sh lần nữa để dọn tên cũ."
+    fi
 fi
 echo "Theme hiện tại: $(python3 -c "import json;print(json.load(open('$DEST/config.json'))['theme'])")"

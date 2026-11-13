@@ -4,8 +4,8 @@
 import GLib from 'gi://GLib';
 import Cairo from 'cairo';
 import System from 'system';
-import {Sensors} from '../scifi-hud@ubuntu-assistant/sensors.js';
-import {drawHud, THEMES} from '../scifi-hud@ubuntu-assistant/hud.js';
+import {Sensors} from '../system-hud@ubuntu-assistant/sensors.js';
+import {drawHud, THEMES} from '../system-hud@ubuntu-assistant/hud.js';
 
 const [outDir = '.', secArg = '20', wallpaper = '/usr/share/backgrounds/warty-final-ubuntu.png', themeArg = ''] = System.programArgs;
 const seconds = Number(secArg);

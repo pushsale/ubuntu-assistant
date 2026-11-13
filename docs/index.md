@@ -7,10 +7,9 @@ Bộ công cụ tự viết để tuỳ biến và vận hành máy Ubuntu 26.04
 | Thư mục | Phạm vi | Trạng thái | Cập nhật |
 |---|---|---|---|
 | [remote-shield/](remote-shield/overview.md) | Che màn hình thật khi có người remote RDP; người remote vẫn thấy và điều khiển desktop | đang chạy | 2026-11-13 |
+| [system-hud/](system-hud/overview.md) | Bảng theo dõi CPU/RAM/GPU/ổ đĩa/mạng/nhiệt độ vẽ trên desktop, dưới mọi cửa sổ (tên cũ: Sci-Fi HUD) | đang chạy | 2026-11-13 |
 
 Mỗi thư mục có `overview.md` (cho người không đọc code) và `system.md` (chi tiết kỹ thuật).
-
-Feature chưa có tài liệu: `scifi-hud/` (extension HUD hiển thị CPU/RAM/GPU/nhiệt độ trên desktop). Viết khi có yêu cầu.
 
 ## File bổ sung
 
@@ -20,7 +19,7 @@ Feature chưa có tài liệu: `scifi-hud/` (extension HUD hiển thị CPU/RAM/
 
 ## Quan hệ giữa các feature
 
-`remote-shield` và `scifi-hud` độc lập, đều là GNOME Shell extension của cùng user và dùng chung kiểu "file khởi động mỏng" (`extension.js` nạp `core.js?v=<thời gian>`) để cập nhật code không cần đăng xuất. Không gọi lẫn nhau.
+`remote-shield` và `system-hud` độc lập, đều là GNOME Shell extension của cùng user và dùng chung kiểu "file khởi động mỏng" (`extension.js` nạp `core.js?v=<thời gian>`) để cập nhật code không cần đăng xuất. Không gọi lẫn nhau.
 
 ## Thứ tự đọc cho session mới
 

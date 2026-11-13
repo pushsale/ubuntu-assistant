@@ -1,4 +1,4 @@
-// Sci-Fi HUD: vẽ bảng theo dõi CPU/RAM/GPU/Disk/Network thẳng lên desktop,
+// System HUD: vẽ bảng theo dõi CPU/RAM/GPU/Disk/Network thẳng lên desktop,
 // nằm dưới mọi cửa sổ (trong background group của GNOME Shell).
 
 import GLib from 'gi://GLib';
@@ -30,7 +30,7 @@ function loadConfig(dir) {
         if (ok)
             return {...DEFAULTS, ...JSON.parse(new TextDecoder().decode(bytes))};
     } catch (e) {
-        console.warn(`[scifi-hud] config.json không đọc được, dùng mặc định: ${e.message}`);
+        console.warn(`[system-hud] config.json không đọc được, dùng mặc định: ${e.message}`);
     }
     return {...DEFAULTS};
 }
@@ -64,14 +64,14 @@ export class HudCore {
         this._sensors = new Sensors();
         this._sensors.start();
 
-        this._area = new St.DrawingArea({reactive: false, name: 'scifi-hud'});
+        this._area = new St.DrawingArea({reactive: false, name: 'system-hud'});
         this._area.connect('repaint', area => {
             const cr = area.get_context();
             const [w, h] = area.get_surface_size();
             try {
                 drawHud(cr, w, h, this._display ?? this._sensors.state, this._cfg.theme);
             } catch (e) {
-                console.error(`[scifi-hud] lỗi khi vẽ: ${e}`);
+                console.error(`[system-hud] lỗi khi vẽ: ${e}`);
             } finally {
                 cr.$dispose();
             }
@@ -106,7 +106,7 @@ export class HudCore {
                 this._relayout();
             });
         } catch (e) {
-            console.warn(`[scifi-hud] không theo dõi được config.json: ${e.message}`);
+            console.warn(`[system-hud] không theo dõi được config.json: ${e.message}`);
         }
 
         this._animator = new Animator(this._cfg.animMs);

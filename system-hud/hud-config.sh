@@ -7,7 +7,7 @@
 #   ./hud-config.sh theme orbitalLight đổi giao diện (orbital | orbitalLight | card | tactical | terminal)
 #   ./hud-config.sh widthFraction 0.3  rộng 30% màn hình
 set -euo pipefail
-CFG="$HOME/.local/share/gnome-shell/extensions/scifi-hud@ubuntu-assistant/config.json"
+CFG="$HOME/.local/share/gnome-shell/extensions/system-hud@ubuntu-assistant/config.json"
 [ -f "$CFG" ] || { echo "Chưa cài HUD ($CFG không tồn tại)"; exit 1; }
 if [ $# -ge 2 ]; then
     python3 - "$CFG" "$1" "$2" <<'PY'

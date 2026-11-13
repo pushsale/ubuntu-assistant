@@ -5,9 +5,9 @@
 import GLib from 'gi://GLib';
 import Cairo from 'cairo';
 import System from 'system';
-import {Sensors, HISTORY} from '../scifi-hud@ubuntu-assistant/sensors.js';
-import {drawHud} from '../scifi-hud@ubuntu-assistant/hud.js';
-import {Animator} from '../scifi-hud@ubuntu-assistant/animator.js';
+import {Sensors, HISTORY} from '../system-hud@ubuntu-assistant/sensors.js';
+import {drawHud} from '../system-hud@ubuntu-assistant/hud.js';
+import {Animator} from '../system-hud@ubuntu-assistant/animator.js';
 
 const [outDir = '.', theme = 'orbital', intervalArg = '3000', animArg = '900', fpsArg = '30'] = System.programArgs;
 const interval = Number(intervalArg), animMs = Number(animArg), fps = Number(fpsArg);

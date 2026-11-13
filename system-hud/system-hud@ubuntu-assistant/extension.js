@@ -1,11 +1,11 @@
-// Sci-Fi HUD: file khởi động mỏng.
+// System HUD: file khởi động mỏng.
 // Toàn bộ logic nằm ở core.js và được nạp kèm mã phiên bản, nên sau khi cập nhật
 // code chỉ cần tắt/bật lại extension (install.sh tự làm) là chạy bản mới,
 // không phải đăng xuất. File này gần như không bao giờ cần sửa.
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-export default class SciFiHudExtension extends Extension {
+export default class SystemHudExtension extends Extension {
     enable() {
         this._enabled = true;
         const gen = this._gen = (this._gen ?? 0) + 1;
@@ -16,7 +16,7 @@ export default class SciFiHudExtension extends Extension {
                 this._core = new mod.HudCore(this.path);
                 this._core.enable();
             })
-            .catch(e => console.error(`[scifi-hud] không nạp được core.js: ${e}\n${e.stack}`));
+            .catch(e => console.error(`[system-hud] không nạp được core.js: ${e}\n${e.stack}`));
     }
 
     disable() {
@@ -25,7 +25,7 @@ export default class SciFiHudExtension extends Extension {
         try {
             this._core?.disable();
         } catch (e) {
-            console.error(`[scifi-hud] lỗi khi tắt: ${e}`);
+            console.error(`[system-hud] lỗi khi tắt: ${e}`);
         }
         this._core = null;
     }
