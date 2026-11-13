@@ -49,7 +49,7 @@ Ubuntu Setup là danh sách công cụ và thiết lập cần có khi chuyển 
 | Ngày | Mốc |
 |---|---|
 | 2026-11-13 | Tạo khung: README (khối lệnh cài Claude Desktop từ kho apt chính thức, có kiểm tra khoá ký), CLAUDE.md (quy trình), packages.md |
-| 2026-11-13 | Người dùng chốt thứ tự: kiểm tra mạng, card màn hình → gõ tiếng Việt → Remote Shield → OnlyOffice (LibreOffice nếu chưa đủ) |
+| 2026-11-13 | Người dùng chốt danh sách: kiểm tra máy, phím tắt kiểu Windows, gõ tiếng Việt, Chrome, Remote Shield + Desktop Sharing + Remote Control, OnlyOffice / LibreOffice, Remmina, RustDesk, Notepad Next (Notepad++ không có bản Linux), DBeaver |
 
 ## Tech stack
 
@@ -58,7 +58,7 @@ Ubuntu Setup là danh sách công cụ và thiết lập cần có khi chuyển 
 
 ## Quy mô hiện tại
 
-- 3 file trong `ubuntu-setup/`. Danh sách theo thứ tự người dùng chọn: kiểm tra mạng và card màn hình → gõ tiếng Việt (ibus-bamboo) → Remote Shield → OnlyOffice (LibreOffice nếu chưa đủ). 2 mục nhóm Claude (chỉ kiểm tra), 12 mục `cài`, 3 mục `đề xuất` chờ duyệt.
+- 3 file trong `ubuntu-setup/`. Danh sách theo thứ tự người dùng chọn: kiểm tra mạng, card màn hình → phím tắt kiểu Windows (Windows + S tìm kiếm; Terminal Ctrl+C copy, Ctrl+V paste, Ctrl+Shift+C dừng lệnh) → gõ tiếng Việt → Chrome → Remote Shield + Desktop Sharing + Remote Control (Remote Login hỏi trước) → OnlyOffice (LibreOffice nếu chưa đủ) → Remmina, RustDesk → Notepad Next (thay Notepad++) → DBeaver. 2 mục nhóm Claude (chỉ kiểm tra), 21 mục `cài` (4 mục `hỏi trước`), 1 mục `đề xuất`.
 - Chưa chạy thử trên máy mới.
 
 ## Đặc điểm nổi bật

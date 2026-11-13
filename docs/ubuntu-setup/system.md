@@ -65,7 +65,11 @@ Mỗi nhóm `## <số>. <tên>` là một bảng 7 cột:
 | Ghi chú | `hỏi trước`, nguồn ngoài (PPA...), việc người dùng tự làm |
 | Trạng thái | `cài` / `bỏ` / `đề xuất` |
 
-Nhóm hiện có (thứ tự người dùng chọn 2026-11-13): 0 Claude (chỉ kiểm tra), 1 Kiểm tra máy (mạng, card màn hình; mạng lỗi thì dừng toàn bộ), 2 Gõ tiếng Việt, 3 Remote Shield, 4 Văn phòng (OnlyOffice; LibreOffice `hỏi trước`), 5 Đề xuất khác (chưa duyệt), 6 Người dùng bổ sung.
+Nhóm hiện có (thứ tự người dùng chọn 2026-11-13): 0 Claude (chỉ kiểm tra), 1 Kiểm tra máy (mạng, card màn hình; mạng lỗi thì dừng toàn bộ), 2 Phím tắt kiểu Windows, 3 Gõ tiếng Việt, 4 Trình duyệt (Chrome), 5 Remote (Remote Shield, Desktop Sharing, Remote Control; Remote Login `hỏi trước`), 6 Văn phòng (OnlyOffice; LibreOffice `hỏi trước`), 7 Remote sang máy khác (Remmina, RustDesk), 8 Soạn thảo (Notepad Next; Notepad++ qua Wine `hỏi trước`), 9 Cơ sở dữ liệu (DBeaver), 10 Đề xuất khác, 11 Người dùng bổ sung.
+
+Nguồn ngoài kho Ubuntu đã được người dùng duyệt: PPA `bamboo-engine/ibus-bamboo`, `.deb` Chrome của Google (`dl.google.com`, tự thêm kho apt), `.deb` RustDesk từ GitHub `rustdesk/rustdesk` (lấy qua API releases/latest; không tự cập nhật). Đã kiểm tra 2026-11-13: URL Chrome trả 200; bản RustDesk mới nhất 1.5.3 có tài sản `rustdesk-1.5.3-x86_64.deb`.
+
+Phím Terminal: Ubuntu 25.10+ dùng Ptyxis (`org.gnome.Ptyxis.Shortcuts`). Đặt `copy-clipboard` = `<ctrl>c`, `paste-clipboard` = `<ctrl>v`; Ctrl+Shift+C không còn gắn với copy nên terminal nhận nó như Ctrl+C (gửi tín hiệu dừng). Máy phát triển đang cấu hình đúng như vậy.
 
 Trong bảng, dấu `|` trong lệnh viết là `\|` (escape Markdown); khi chạy bỏ dấu `\`. Các lệnh "Kiểm tra" hiện có đã chạy thử trên máy phát triển (2026-11-13), đều trả 0.
 
@@ -89,6 +93,7 @@ Không có giao diện. Người dùng tương tác qua terminal (Bước 1) và
 |---|---|
 | 2026-11-13 | #30: tạo khung README / CLAUDE.md / packages.md; khối lệnh cài Claude theo hướng dẫn chính thức, có kiểm tra khoá |
 | 2026-11-13 | Danh sách đầu tiên theo người dùng: mạng, card màn hình, ibus-bamboo, Remote Shield, OnlyOffice, LibreOffice (nếu cần) |
+| 2026-11-13 | Danh sách đầy đủ: thêm phím tắt kiểu Windows (Windows + S, copy / paste / dừng lệnh trong Terminal), Chrome, Desktop Sharing + Remote Control, Remmina, RustDesk, Notepad Next, DBeaver |
 
 ## 9. Cấu trúc thư mục
 
