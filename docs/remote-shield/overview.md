@@ -10,7 +10,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 | Che bằng một lớp phủ trong GNOME thì người remote cũng bị che (RDP chụp chính hình GNOME vẽ) | Không che trong GNOME mà che ở tầng thấp hơn (giao khung cho driver), nơi RDP không đi qua |
 | Người tại chỗ vẫn bấm phím, rê chuột được trong lúc người khác đang remote | Bỏ sự kiện của bàn phím, chuột thật ngay khi Mutter đọc từ libinput (con trỏ thật cũng đứng yên); thiết bị ảo của phiên RDP không đi qua đó nên vẫn được nhận |
 | Ngắt kết nối xong, desktop lộ ra cho người đứng ở máy | Khoá máy trước rồi mới trả lại màn hình |
-| Máy hai màn hình nhưng RDP chỉ gửi màn chính: app ở màn phụ không với tới được | Khi remote vào: dồn cửa sổ ở màn phụ sang màn chính; khi ngắt: trả từng cửa sổ về đúng chỗ cũ |
+| Máy hai màn hình nhưng RDP chỉ gửi màn chính: app ở màn phụ không với tới được | Khi remote vào: dồn cửa sổ ở màn phụ sang màn chính (vào đúng workspace đang xem, co cho vừa màn); cửa sổ mở mới hoặc bị chuyển sang màn phụ trong lúc remote cũng được dồn về; khi ngắt: trả từng cửa sổ về đúng chỗ cũ |
 | GNOME chặn remote khi màn hình khóa; mà Remote Shield khóa máy sau mỗi lần ngắt, nên lần sau không vào lại được | Remote Shield tự gỡ lệnh chặn đó (thay cho extension Allow Locked Remote Desktop phải cài riêng trước đây); người remote vào màn khóa và mở khóa từ xa, màn hình thật vẫn bị che |
 | Không chắc màn hình đã được che (lỗi driver, thư viện chưa nạp) | Không xác nhận được trong 4 giây thì chủ động ngắt phiên remote và khoá máy, không để lộ màn hình |
 | Cài lên máy khác phải làm tay nhiều bước | Gói `remote-shield-<phiên bản>.tar.gz` có một lệnh cài, tuỳ chọn bật luôn RDP |
@@ -69,6 +69,7 @@ Remote Shield cho phép remote vào máy Ubuntu giống Windows Remote Desktop. 
 | 2026-11-13 | Đóng gói `remote-shield-2.0.tar.gz` để cài lên máy Ubuntu khác |
 | 2026-11-13 | Remote được cả khi máy đang khóa, không cần cài thêm extension nào |
 | 2026-11-13 | Màn che giống hệt màn khóa; người tại máy bấm là ngắt remote và nhập mật khẩu vào máy |
+| 2026-11-13 | Sửa dồn cửa sổ từ màn phụ (trước đó báo đã dồn nhưng cửa sổ Wayland vẫn nằm ở màn phụ); dồn cả cửa sổ mở trong lúc remote |
 | 2026-11-13 | Chặn bàn phím, chuột tại máy ở tầng thấp hơn (trước đó phím tại máy vẫn lọt vào app và bấm tại máy chỉ thỉnh thoảng ngắt được remote); giữ phiên remote khi người remote khóa máy |
 
 ## Tech stack

@@ -155,7 +155,6 @@ export class ShieldCore {
                 this._onLocalPress();
         });
         log('đã bật');
-
         // Đang có phiên remote mà GNOME tắt rồi bật lại extension (xem disable()): theo dõi tiếp, kéo rèm lại.
         const carried = this._carry.handles;
         this._carry.handles = null;
@@ -186,6 +185,7 @@ export class ShieldCore {
         this._pressMonitor?.cancel();
         this._pressMonitor = null;
         this._blockInput(false);
+        this._watchWindows(false);
         this._clearTimers();
         this._restoreWindows();
         this._engaged = false;
@@ -496,8 +496,10 @@ export class ShieldCore {
         this._redraw();
         this._scheduleClock();
         log('kéo rèm: yêu cầu che màn hình thật, chặn input tại chỗ');
-        if (this._cfg.gatherWindows)
+        if (this._cfg.gatherWindows) {
             this._gatherWindows();
+            this._watchWindows(true);
+        }
         this._verify(GLib.get_monotonic_time());
     }
 
@@ -577,6 +579,7 @@ export class ShieldCore {
         this._cancel(this._clockId);
         this._verifyId = this._watchId = this._clockId = 0;
         this._blockInput(false); // trả bàn phím, chuột thật trước khi khóa để gõ được mật khẩu ngay
+        this._watchWindows(false);
         this._restoreWindows();
         const prompt = this._promptAfterLock;
         this._promptAfterLock = false;
@@ -605,10 +608,14 @@ export class ShieldCore {
     // ---------- dồn / trả cửa sổ ----------
 
     // RDP ở chế độ mirror-primary chỉ gửi màn hình chính: chuyển mọi cửa sổ ở màn khác sang đó.
+    // Trong lúc remote vẫn theo dõi tiếp: cửa sổ mở mới hoặc bị kéo / chuyển sang màn phụ cũng được dồn về.
     _gatherWindows() {
         const primary = global.display.get_primary_monitor();
+        const area = Main.layoutManager.getWorkAreaForMonitor(primary);
+        const workspace = global.workspace_manager.get_active_workspace();
         const types = new Set([Meta.WindowType.NORMAL, Meta.WindowType.DIALOG,
             Meta.WindowType.MODAL_DIALOG, Meta.WindowType.UTILITY]);
+        const titles = [];
         for (const actor of global.get_window_actors()) {
             const w = actor.get_meta_window?.() ?? actor.meta_window;
             if (!w || w.is_override_redirect() || w.is_skip_taskbar() || !types.has(w.get_window_type()))
@@ -616,25 +623,89 @@ export class ShieldCore {
             const monitor = w.get_monitor();
             if (monitor < 0 || monitor === primary)
                 continue;
-            if (this._moved.some(m => m.window === w))
-                continue;
             const r = w.get_frame_rect();
-            const entry = {
-                window: w,
-                monitor,
-                rect: {x: r.x, y: r.y, width: r.width, height: r.height},
-                maximized: w.is_maximized(),
-                fullscreen: w.is_fullscreen(),
-            };
+            const maximized = w.is_maximized();
+            const fullscreen = w.is_fullscreen();
+            // Đã dồn từ trước rồi lại bị chuyển sang màn phụ: dồn lại, giữ chỗ cũ ban đầu để trả về
+            if (!this._moved.some(m => m.window === w)) {
+                this._moved.push({window: w, monitor, rect: {x: r.x, y: r.y, width: r.width, height: r.height},
+                    maximized, fullscreen});
+            }
+            // Giữ vị trí tương đối trong vùng làm việc, co lại nếu lớn hơn màn chính
+            const from = Main.layoutManager.getWorkAreaForMonitor(monitor);
+            const width = Math.min(r.width, area.width);
+            const height = Math.min(r.height, area.height);
+            const x = area.x + Math.max(0, Math.min(r.x - from.x, area.width - width));
+            const y = area.y + Math.max(0, Math.min(r.y - from.y, area.height - height));
             try {
-                w.move_to_monitor(primary);
-                this._moved.push(entry);
+                this._placeWindow(w, {x, y, width, height}, maximized, fullscreen);
+                // Màn phụ không có workspace (workspaces-only-on-primary): sang màn chính thì đặt vào workspace đang xem
+                if (!w.is_on_all_workspaces() && w.get_workspace() !== workspace)
+                    w.change_workspace(workspace);
+                titles.push(`"${w.get_title()}"`);
             } catch (e) {
                 log(`không chuyển được cửa sổ "${w.get_title()}": ${e.message}`);
             }
         }
-        if (this._moved.length)
-            log(`đã dồn ${this._moved.length} cửa sổ từ màn phụ sang màn chính`);
+        if (titles.length)
+            log(`đã dồn ${titles.length} cửa sổ từ màn phụ sang màn chính: ${titles.join(', ')}`);
+    }
+
+    // Đặt cửa sổ bằng toạ độ. Không dùng move_to_monitor(): trên Mutter 18 nó không chuyển được cửa sổ Wayland
+    // sang màn khác (chỉ xê dịch vài px, không báo lỗi) — đã thử 2026-11-13 với cửa sổ Claude (Electron, Wayland).
+    _placeWindow(w, rect, maximized, fullscreen) {
+        if (w.is_fullscreen())
+            w.unmake_fullscreen();
+        if (w.is_maximized()) {
+            try {
+                w.unmaximize();
+            } catch (e) {
+                w.unmaximize(Meta.MaximizeFlags.BOTH); // API cũ cần cờ
+            }
+        }
+        w.move_resize_frame(true, rect.x, rect.y, rect.width, rect.height);
+        if (fullscreen)
+            w.make_fullscreen();
+        else if (maximized)
+            w.maximize();
+    }
+
+    _watchWindows(on) {
+        const display = global.display;
+        if (!on) {
+            for (const id of this._windowSignals ?? [])
+                display.disconnect(id);
+            this._windowSignals = null;
+            this._cancel(this._gatherId);
+            this._gatherId = 0;
+            this._grabbing = false;
+            return;
+        }
+        if (this._windowSignals)
+            return;
+        this._windowSignals = [
+            display.connect('window-entered-monitor', () => this._queueGather()),
+            display.connect('window-created', () => this._queueGather()),
+            display.connect('grab-op-begin', () => {
+                this._grabbing = true;
+            }),
+            display.connect('grab-op-end', () => {
+                this._grabbing = false;
+                this._queueGather();
+            }),
+        ];
+    }
+
+    // Gom các thay đổi liên tiếp; không giành cửa sổ khi người remote đang kéo / đổi cỡ
+    _queueGather() {
+        if (!this._engaged || this._gatherId)
+            return;
+        this._gatherId = this._timeout(300, () => {
+            this._gatherId = 0;
+            if (this._engaged && !this._grabbing)
+                this._gatherWindows();
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     _restoreWindows() {
@@ -647,23 +718,7 @@ export class ShieldCore {
             try {
                 if (!w.get_compositor_private() || m.monitor >= nMonitors)
                     continue; // cửa sổ đã đóng / màn hình đã rút ra
-                w.move_to_monitor(m.monitor);
-                if (m.fullscreen) {
-                    if (!w.is_fullscreen())
-                        w.make_fullscreen();
-                } else if (m.maximized) {
-                    if (!w.is_maximized())
-                        w.maximize();
-                } else {
-                    if (w.is_maximized()) {
-                        try {
-                            w.unmaximize();
-                        } catch (e) {
-                            w.unmaximize(Meta.MaximizeFlags.BOTH); // API cũ cần cờ
-                        }
-                    }
-                    w.move_resize_frame(false, m.rect.x, m.rect.y, m.rect.width, m.rect.height);
-                }
+                this._placeWindow(w, m.rect, m.maximized, m.fullscreen);
                 n++;
             } catch (e) {
                 log(`không trả được cửa sổ về chỗ cũ: ${e.message}`);

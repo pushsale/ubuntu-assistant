@@ -90,16 +90,16 @@ Vì sao RDP không bị che: gnome-remote-desktop lấy ảnh từ stage của M
 | Nhận diện phiên remote | `_isRemote` [core.js:430](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
 | Theo dõi handle, `stopped` → `_sync` | `_track` [core.js:443](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
 | Kéo rèm | `_engage` [core.js:488](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Chờ xác nhận / theo dõi | `_verify` [core.js:505](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_watch` [core.js:533](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_shimProblem` [core.js:548](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Fail-closed | `_fail` [core.js:561](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Mở rèm (trả input, khoá trước, 800 ms sau mới xoá cờ) | `_disengage` [core.js:573](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Dồn / trả cửa sổ | `_gatherWindows` [core.js:608](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreWindows` [core.js:640](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Chờ xác nhận / theo dõi | `_verify` [core.js:507](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_watch` [core.js:535](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_shimProblem` [core.js:550](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Fail-closed | `_fail` [core.js:563](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Mở rèm (trả input, khoá trước, 800 ms sau mới xoá cờ) | `_disengage` [core.js:575](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Dồn / trả cửa sổ (đặt bằng toạ độ, theo dõi tiếp trong lúc remote) | `_gatherWindows` [core.js:612](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_placeWindow` [core.js:656](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_watchWindows` [core.js:673](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreWindows` [core.js:711](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
 | Cho remote khi màn hình khóa (thay hàm inhibit/uninhibit của controller) | `_allowLockedRemote` [core.js:379](../../remote-shield/remote-shield@ubuntu-assistant/core.js), `_restoreLockedRemote` [core.js:409](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
 | Vẽ ảnh màn che cho từng kích thước màn hình, đổi `shield.gen` | `_renderShield` [core.js:257](../../remote-shield/remote-shield@ubuntu-assistant/core.js); đồng hồ chạy: `_scheduleClock` [core.js:295](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
 | Người tại máy bấm → ngắt remote, khóa, hiện ô mật khẩu | `_localTakeover` [core.js:360](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
 | Chặn input thật: tạo + ghi lại `input-block` mỗi 2 s (shim cũ chưa có `input_hook=1` thì dùng bộ lọc Clutter dự phòng) | `_blockInput` [core.js:319](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
 | shim báo có cú bấm → `_localTakeover` (tắt `localTakeover` thì chỉ Ctrl+Alt+Shift+Backspace) | `_onLocalPress` [core.js:344](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
-| Bộ lọc Clutter dự phòng (chỉ khi shim là bản cũ) | `_filter` [core.js:676](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
+| Bộ lọc Clutter dự phòng (chỉ khi shim là bản cũ) | `_filter` [core.js:731](../../remote-shield/remote-shield@ubuntu-assistant/core.js) |
 | Vẽ ảnh giống màn khóa: hình nền zoom → thu 1/8 → Gauss sigma 45/8 → sáng 0.65 → phóng lại; giờ/ngày/gợi ý (Pango/Cairo) | `ShieldPainter` [overlay.js](../../remote-shield/remote-shield@ubuntu-assistant/overlay.js) |
 
 Quy tắc nhận diện (`_isRemote`): handle có GType chứa `RemoteDesktop`, hoặc `disable_animations = true`, hoặc config `matchAllRemote`. Một kết nối RDP sinh 2 handle: `MetaScreenCastSessionHandle` (disable-animations=true) và `MetaRemoteDesktopSessionHandle` (false). Chia sẻ màn hình khi họp trực tuyến không khớp quy tắc nên không bị che.
@@ -126,7 +126,12 @@ Remote khi màn hình khóa (`allowWhenLocked`):
 - Khi tắt extension: trả lại hàm gốc (`delete` thuộc tính, hoặc gán lại nếu trước đó đã có bản đè khác), rồi chặn thật đủ số lần đã bỏ qua.
 - Thay thế extension Allow Locked Remote Desktop (`allowlockedremotedesktop@kamens.us`). `install.sh` tự gỡ extension đó.
 
-Dồn cửa sổ: chỉ lấy loại NORMAL, DIALOG, MODAL_DIALOG, UTILITY; bỏ override-redirect và skip-taskbar (dock, DING). Mỗi cửa sổ lưu `{window, monitor, rect, maximized, fullscreen}`. Khi trả: bỏ cửa sổ đã đóng (`get_compositor_private()` null) hoặc màn đã rút. Sau đó `move_to_monitor` cũ, khôi phục fullscreen/maximize; nếu không thì `unmaximize()` + `move_resize_frame(false, x, y, w, h)`.
+Dồn cửa sổ (#26):
+- Chỉ lấy loại NORMAL, DIALOG, MODAL_DIALOG, UTILITY; bỏ override-redirect và skip-taskbar (dock, DING). Mỗi cửa sổ lưu `{window, monitor, rect, maximized, fullscreen}` một lần (lần dồn đầu tiên).
+- Đặt bằng toạ độ (`_placeWindow`: bỏ fullscreen/maximize → `move_resize_frame(true, …)` → maximize/fullscreen lại). Vị trí giữ tương đối trong vùng làm việc, kích thước co cho vừa vùng làm việc màn chính. Không dùng `move_to_monitor()`: trên Mutter 18 nó không chuyển được cửa sổ Wayland sang màn khác.
+- Sang màn chính thì đặt vào workspace đang xem (màn phụ không có workspace vì `workspaces-only-on-primary`, nếu không cửa sổ rơi vào workspace 0).
+- Trong lúc remote: nghe `window-created`, `window-entered-monitor`, `grab-op-begin/end` của `global.display`; 300 ms sau thay đổi thì dồn tiếp (bỏ qua khi người remote đang kéo / đổi cỡ, dồn khi thả). Cửa sổ mở mới ở màn phụ hoặc bị chuyển sang màn phụ (Super+Shift+←/→, kéo) đều về màn chính.
+- Khi trả: bỏ cửa sổ đã đóng (`get_compositor_private()` null) hoặc màn đã rút; còn lại `_placeWindow` về đúng `rect` cũ rồi khôi phục maximize/fullscreen.
 
 ### 3.2 Shim
 
@@ -258,6 +263,7 @@ Thiết lập hệ thống liên quan:
 | 2026-11-13 | #16: `install.sh` hợp nhất (kiểm tra máy, `--rdp`, `--remote-login`, `--force`); drop-in chuyển sang template `org.gnome.Shell@.service.d`; `package.sh` tạo gói tar.gz |
 | 2026-11-13 | #20: màn che giống hệt màn khóa (hình nền mờ, giờ chạy, ngày, gợi ý); bấm tại máy → ngắt remote, khóa, hiện ô mật khẩu; shim vẽ ảnh toàn màn theo kích thước và vẽ lại khi `shield.gen` đổi |
 | 2026-11-13 | #24: sửa ngắt remote từ tại chỗ bị kéo rèm 2 lần (gây đơ bàn phím / bộ gõ sau khi mở khóa) |
+| 2026-11-13 | #26: dồn cửa sổ thật sự hoạt động: đặt bằng toạ độ thay cho `move_to_monitor` (không chuyển được cửa sổ Wayland), co kích thước vừa màn chính, đưa vào workspace đang xem; theo dõi tiếp cửa sổ mở mới / bị chuyển sang màn phụ trong lúc remote |
 | 2026-11-13 | #25: chặn input thật chuyển xuống shim (hook `libinput_get_event`): trước đó bộ lọc Clutter đứng sau bộ lọc của Mutter nên phím/chuột tại máy vẫn lọt vào app và bấm tại máy chỉ thỉnh thoảng ngắt được remote; con trỏ thật nay cũng đứng yên. Giữ phiên remote qua lần GNOME tắt/bật lại extension khi khóa máy; sửa lỗi `this._timers is null` |
 | 2026-11-13 | #19: tích hợp remote khi màn hình khóa (`allowWhenLocked`, mặc định bật); `install.sh` gỡ extension Allow Locked Remote Desktop (đã gỡ trên máy này) |
 
@@ -324,7 +330,7 @@ Code path cheatsheet:
 |---|---|
 | Đổi điều kiện coi là phiên remote | `core.js` `_isRemote` |
 | Đổi cách chặn input / phím khẩn cấp | `shield-shim.c` `input_drop`, `input_report`; `core.js` `_blockInput`, `_onLocalPress` |
-| Đổi quy tắc dồn/trả cửa sổ | `core.js` `_gatherWindows`, `_restoreWindows` |
+| Đổi quy tắc dồn/trả cửa sổ | `core.js` `_gatherWindows`, `_placeWindow`, `_watchWindows`, `_restoreWindows` |
 | Đổi kiểm tra an toàn / thời gian chờ | `core.js` `_verify`, `_shimProblem`, `config.json` `verifyMs` |
 | Đổi giao diện màn che | `overlay.js` (xem trước bằng `tools/preview-shield.js`), dòng gợi ý: `hint` trong config |
 | Đổi hành vi khi người tại máy bấm | `core.js` `_onLocalPress`, `_localTakeover` |
@@ -365,6 +371,7 @@ Trạng thái runtime (2026-11-13):
 | Nhận diện bằng GType `RemoteDesktop` / `disable-animations` | Không che khi chỉ chia sẻ màn hình trong cuộc họp |
 | Chặn input thật ở shim (hook `libinput_get_event`), không ở bộ lọc Clutter (#25) | Bộ lọc của Mutter đứng trước và đã giao sự kiện cho app; libinput chỉ có thiết bị thật nên không cần phân biệt với thiết bị ảo RDP; chặn được cả di chuyển con trỏ. Bộ lọc Clutter chỉ giữ làm dự phòng khi shim đang chạy là bản cũ |
 | Cờ `input-block` có hạn 6 s, extension ghi lại mỗi 2 s | Chặn sai ở tầng libinput là mất cả bàn phím lẫn chuột (kể cả Ctrl+Alt+F3); cờ tự hết hạn khi extension không còn hoạt động |
+| Dồn cửa sổ bằng toạ độ, không bằng `move_to_monitor` | `move_to_monitor` không chạy với cửa sổ Wayland trên Mutter 18 (đã đo) |
 | RDP `mirror-primary` + dồn cửa sổ, không dùng `extend` | `extend` tạo màn ảo trống, người remote không thấy app đang mở; Alt+Tab không kéo cửa sổ sang màn RDP (đã thử) |
 | File khởi động mỏng `extension.js` → `core.js?v=` | GJS cache ESM theo URL; không có cách này mỗi lần sửa phải đăng xuất |
 | Tự cho remote khi màn hình khóa, không dựa vào extension ngoài | Remote Shield khóa máy sau mỗi lần ngắt; nếu GNOME chặn remote khi khóa thì lần kết nối sau thất bại. Tích hợp để gói cài một lần là đủ. Đếm lệnh chặn/mở chặn để Mutter không báo `inhibit_count > 0` như bản extension cũ |
@@ -390,6 +397,7 @@ Trạng thái runtime (2026-11-13):
 | Bật cờ không có tác dụng sau khi gnome-shell crash | Guard bật vì marker còn sót | Kiểm tra nguyên nhân crash, rồi `shieldctl reset-guard` |
 | Menu Ubuntu và HUD nhảy sang màn trái | Màn chính bị đổi sang HDMI-3 (một màn mất tín hiệu thoáng qua, Mutter lưu lại monitors.xml); không do Remote Shield | Đặt lại DP-2 qua `ApplyMonitorsConfig`. RDP mirror-primary gửi đúng màn chính nên màn chính sai thì người remote xem sai màn |
 | Người remote không thấy app ở màn phụ | `mirror-primary` chỉ gửi màn chính | `gatherWindows` |
+| Log báo `đã dồn 1 cửa sổ` nhưng người remote vẫn không thấy cửa sổ | `meta_window_move_to_monitor()` không chuyển cửa sổ Wayland (Claude/Electron) sang màn khác, chỉ xê dịch vài px, không báo lỗi. Cửa sổ mở trong lúc remote ở màn phụ thì trước đây không được dồn | Đặt bằng `move_resize_frame` theo toạ độ; theo dõi `window-created` / `window-entered-monitor` (#26). Bài học: sau khi di chuyển cửa sổ, kiểm tra lại `get_monitor()` / `get_frame_rect()` chứ không tin lời gọi |
 | Chữ trên ảnh màn che có viền màu (cam/xanh) khi thu nhỏ | Cairo khử răng cưa theo subpixel trên surface RGB24 | Vẽ trên surface ARGB32 (khử răng cưa thang xám như shell); shim chép được cả ARGB32 lẫn RGB24 |
 | Đồng hồ trên màn che đứng yên | Shim dựng framebuffer một lần và trước đây `munmap` ngay | Giữ map; extension vẽ lại đầu mỗi phút + đổi `shield.gen`; shim kiểm tra mỗi 100 ms trong lúc giao khung và vẽ lại tại chỗ; extension `queue_redraw` 2 lần để chắc có lần giao khung |
 | Dấu hai chấm giờ trông khác `:` | `GnomeDesktop.WallClock` dùng ký tự U+2236 (∶) như màn khóa thật | Đúng ý đồ; không thay bằng `:` |
