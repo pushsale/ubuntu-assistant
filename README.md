@@ -44,6 +44,6 @@ Từ đây Claude làm tiếp: chạy một script cài các thứ đơn giản 
 
 ## Khác
 
-- Hướng dẫn riêng từng công cụ trong repo: [Remote Shield](remote-shield/README.md), [System HUD](system-hud/README.md).
+- Hướng dẫn riêng từng công cụ trong repo: [Remote Shield](remote-shield/README.md), [System HUD](system-hud/README.md), [System HUD cho Windows](system-hud-windows/README.md).
 - Tài liệu kỹ thuật: [docs/index.md](docs/index.md).
 - Giấy phép: [MIT](LICENSE).
