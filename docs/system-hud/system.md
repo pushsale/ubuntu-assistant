@@ -167,13 +167,13 @@ Thiết lập ngoài cũng ảnh hưởng tới HUD:
 | 2026-11-12 | Animator (chuyển mượt, đồ thị trượt), cache nền panel, `orbitalLight`, theo dõi config.json, chọn màn hình/mép |
 | 2026-11-12 | File khởi động mỏng; install.sh chờ INACTIVE/ACTIVE (sửa lỗi nằm ở INACTIVE sau khi cài lại) |
 | 2026-11-12 | Gauge orbital bỏ thước vạch và 2 cung xoay ngoài |
-| 2026-11-13 | #18: đổi tên Sci-Fi HUD → System HUD; `install.sh` chuyển config từ UUID cũ, xoá thư mục cũ, gỡ UUID cũ khỏi danh sách bật khi bản mới đã ACTIVE |
+| 2026-11-13 | #18: đổi tên Sci-Fi HUD → System HUD (UUID mới). Trên máy này đã gỡ hẳn UUID cũ và đăng nhập lại để nạp sạch; `install.sh` không giữ code chuyển đổi (bản cũ chưa từng được cài ở máy khác) |
 
 ## 9. Cấu trúc thư mục
 
 ```
 system-hud/
-├─ install.sh                  cài / nạp lại; [theme] đặt theme; chuyển đổi từ scifi-hud
+├─ install.sh                  cài / nạp lại; [theme] đặt theme
 ├─ hud-config.sh               xem / đổi 1 khoá trong config.json đã cài
 ├─ system-hud@ubuntu-assistant/
 │  ├─ metadata.json            uuid, name "System HUD", shell-version ["50"]
@@ -240,9 +240,7 @@ gjs -m tools/preview.js /tmp/hud-preview 10
 
 Trạng thái runtime (2026-11-13):
 - Đã cài `system-hud@ubuntu-assistant` và bật trong danh sách.
-- Shell đang chạy vẫn là bản tên cũ (`scifi-hud`) tới lần đăng nhập sau.
-- Thư mục cũ đang là bản tạm (code mới, `shell-version: ["0"]`).
-- Sau khi đăng nhập lại, chạy `./install.sh` một lần để gỡ UUID cũ khỏi `enabled-extensions` và xoá thư mục cũ.
+- UUID cũ `scifi-hud@ubuntu-assistant` đã gỡ hẳn (thư mục và danh sách bật).
 - Cấu hình: orbital, màn phụ HDMI-3, mép trái.
 
 ## 13. Architectural Decisions & Rationale
@@ -270,7 +268,7 @@ Trạng thái runtime (2026-11-13):
 | HUD (và menu Ubuntu) nhảy sang màn khác | Màn chính bị đổi (monitors.xml lưu lại sau khi một màn mất tín hiệu thoáng qua); `monitor: secondary` tính theo màn chính | Đặt lại màn chính (DP-2) trong Settings → Displays hoặc qua `ApplyMonitorsConfig` |
 | HUD bị hình nền che sau khi đổi wallpaper | Actor nền mới được thêm lên trên | Đã xử lý bằng `child-added` → `_raise()` |
 | Đổi UUID: HUD mới không hiện ngay | Wayland không nạp extension mới khi shell đang chạy | Đăng xuất / đăng nhập; bản cũ vẫn chạy tới lúc đó |
-| HUD biến mất sau khi đổi tên, log `ImportError … scifi-hud@ubuntu-assistant/core.js` | `install.sh` bản đầu xoá thư mục UUID cũ ngay; khi gỡ extension Allow Locked Remote Desktop, GNOME tắt rồi bật lại các extension đứng sau nó, bản cũ không còn file để nạp | Chỉ xoá thư mục cũ khi bản mới đã ACTIVE (`drop_old_uuid`). Đã khôi phục tạm thư mục cũ (đặt `shell-version: ["0"]` để lần đăng nhập sau GNOME bỏ qua, tránh 2 HUD) |
+| Xoá thư mục của extension đang chạy: extension biến mất, log `ImportError … core.js: No such file` | Tắt một extension thì GNOME tắt rồi bật lại các extension đứng sau nó trong danh sách; lúc bật lại, extension đã mất file nên nạp `core.js` thất bại (gặp khi đổi tên HUD rồi gỡ Allow Locked Remote Desktop) | Đổi tên / gỡ extension: bỏ khỏi `enabled-extensions` rồi mới xoá thư mục, sau đó đăng xuất và đăng nhập lại để nạp sạch; không giữ bản tạm |
 | Gauge orbital rối mắt | Quá nhiều chi tiết trang trí | Đã bỏ thước vạch và cung xoay (2026-11-12); không thêm lại khi chưa hỏi |
 | Log có `JS ERROR … grabbedsOldRect` | Lỗi của extension tiling-assistant | Không liên quan HUD |
 
