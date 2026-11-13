@@ -1,31 +1,36 @@
 # Ubuntu Setup — hướng dẫn cho Claude
 
-Thư mục này dùng khi chuyển sang một máy Ubuntu mới (hoặc cài lại máy). Người dùng chỉ cần nói kiểu "cài đặt máy theo ubuntu-setup" là Claude đọc file này rồi làm theo.
+Thư mục này dùng khi chuyển sang một máy Ubuntu mới (hoặc cài lại máy). Người dùng đã tự cài Claude theo [README.md gốc](../README.md), rồi giao việc kiểu "cài đặt máy theo ubuntu-setup". Claude đọc file này rồi làm theo.
 
-Bước cài Claude do người dùng tự làm bằng cách dán lệnh ở [README.md](README.md) (Claude chưa có trên máy lúc đó). Danh sách cần cài sau đó nằm ở [packages.md](packages.md). File này chỉ mô tả **cách làm**; nội dung cần cài do người dùng quyết định trong `packages.md`.
+Hai phần việc, chi tiết ở [packages.md](packages.md):
+
+- **Phần A**: [install-basic.sh](install-basic.sh) cài mọi thứ đơn giản trong một lượt, người dùng nhập mật khẩu sudo một lần.
+- **Phần B**: các mục phức tạp Claude làm từng mục.
 
 ## Quy trình
 
-1. **Đọc máy:** `lsb_release -ds`, `gnome-shell --version`, `echo $XDG_SESSION_TYPE`, card đồ hoạ (`lspci | grep -iE 'vga|3d'`), kiến trúc (`uname -m`). Ghi lại để so với cột "Yêu cầu" của từng mục.
-2. **Đọc `packages.md`** từ trên xuống. Bỏ qua mục có trạng thái `bỏ` hoặc nằm trong khối "Mẫu".
-3. **Kiểm tra từng mục** bằng lệnh ở cột "Kiểm tra". Lệnh trả về thành công (exit 0) nghĩa là đã cài: không làm gì, ghi "đã có".
-4. **Lập kế hoạch** trước khi cài bất cứ thứ gì: một bảng gồm mục sẽ cài, mục đã có, mục bỏ qua (kèm lý do: không hợp máy, thiếu thông tin). Gửi cho người dùng, chờ đồng ý.
-5. **Cài theo thứ tự nhóm** trong `packages.md` (thứ tự do người dùng chọn, nhóm trên là nền tảng cho nhóm dưới). Trong một nhóm, cài theo thứ tự dòng. Nhóm "Kiểm tra máy" lỗi mạng thì dừng toàn bộ.
-6. **Xác minh** lại từng mục bằng lệnh "Kiểm tra" sau khi cài. Mục nào lỗi: dừng mục đó, ghi lỗi, làm tiếp mục khác không phụ thuộc nó.
-7. **Báo cáo** cuối cùng: bảng mục ↔ kết quả (đã có / đã cài / lỗi + lý do / bỏ qua), và các việc người dùng còn phải tự làm (đăng xuất, đăng nhập tài khoản, nhập license...).
+1. **Repo:** đang làm việc trong bản clone của repo (thường là `~/ubuntu-assistant`). Chưa có thì `git clone https://github.com/pushsale/ubuntu-assistant.git ~/ubuntu-assistant`; có rồi thì `git -C ~/ubuntu-assistant pull --ff-only`.
+2. **Đọc máy:** `lsb_release -ds`, `gnome-shell --version`, `echo $XDG_SESSION_TYPE`, card đồ hoạ (`lspci | grep -iE 'vga|3d'`), kiến trúc (`uname -m`).
+3. **Kiểm tra Phần A:** chạy `ubuntu-setup/install-basic.sh --check` (không cần sudo, không thay đổi máy). Đọc bảng giữa hai dòng `=== TỔNG KẾT ===`.
+4. **Chạy Phần A:** còn mục `CHƯA CÓ` thì chạy `ubuntu-setup/install-basic.sh` (không có `--check`, **không** thêm `sudo` phía trước) **trong terminal của người dùng** để họ nhập mật khẩu một lần. Không cần hỏi duyệt riêng: người dùng giao việc cài máy là đã đồng ý Phần A. Báo trước một câu: "Script sẽ hỏi mật khẩu đăng nhập Ubuntu một lần."
+   - Chờ script chạy xong (có thể vài phút do tải Chrome, snap). Đọc tổng kết trong terminal hoặc ở cuối `~/.cache/ubuntu-setup/install-basic.log`.
+   - `mang` = `LỖI`: dừng toàn bộ, chẩn đoán (`ip route`, `resolvectl status`, `nmcli`) và báo người dùng; không tự đổi cấu hình mạng.
+   - Mục `LỖI` khác: đọc log tìm nguyên nhân, sửa nếu là lỗi tạm (mạng chập chờn, apt đang khoá) bằng cách chạy lại script; lỗi khác thì ghi vào báo cáo.
+   - Mục `CẦN XỬ LÝ`: làm theo cột "Ghi chú" của mục đó trong Phần A.
+5. **Lập kế hoạch Phần B:** chạy lệnh "Kiểm tra" từng mục Phần B, lập bảng mục sẽ làm / đã có / bỏ qua (kèm lý do). Gửi người dùng, chờ đồng ý. Mục có cờ `hỏi trước` hỏi riêng ngay trước khi làm.
+6. **Làm Phần B** theo thứ tự nhóm, trong nhóm theo thứ tự dòng. Sau mỗi mục chạy lại lệnh "Kiểm tra". Mục lỗi: dừng mục đó, ghi lỗi, làm tiếp mục khác không phụ thuộc nó.
+7. **Báo cáo** cuối cùng: bảng mục ↔ kết quả (cả Phần A và B), giá trị thiết lập cũ đã đổi (lấy từ cột "GHI CHÚ" của tổng kết), và các việc người dùng còn phải tự làm (đăng xuất / đăng nhập lại, đăng nhập tài khoản, đặt mật khẩu RustDesk...).
 
 ## Quy tắc an toàn
 
-- **Mật khẩu sudo:** không bao giờ tự gõ. Lệnh cần sudo thì chạy trong terminal của người dùng (để họ nhập mật khẩu), gom nhiều lệnh apt vào một lần để chỉ hỏi mật khẩu một lần.
+- **Mật khẩu sudo:** không bao giờ tự gõ. Lệnh cần sudo (kể cả `install-basic.sh`) chạy trong terminal của người dùng để họ tự nhập.
 - **Tài khoản, license, token, khoá API:** không bao giờ nhập thay. Ghi vào phần "việc người dùng tự làm".
-- **Nguồn ngoài kho Ubuntu** (PPA, kho riêng của hãng, file `.deb` tải về, `curl | sh`, Flatpak/Snap không phải của hãng): chỉ dùng đúng nguồn ghi trong `packages.md`. Nguồn chưa ghi hoặc khác đi thì hỏi trước. Script tải về phải đọc trước khi chạy.
-- **Mục có cờ `hỏi trước`** trong cột "Ghi chú": luôn hỏi lại người dùng ngay trước khi làm, kể cả khi kế hoạch đã được duyệt.
+- **Nguồn ngoài kho Ubuntu** (PPA, kho riêng của hãng, file `.deb` tải về, `curl | sh`, Flatpak/Snap không phải của hãng): chỉ dùng đúng nguồn ghi trong `packages.md` / `install-basic.sh`. Nguồn chưa ghi hoặc khác đi thì hỏi trước. Script tải về phải đọc trước khi chạy.
+- **Mục có cờ `hỏi trước`:** luôn hỏi lại người dùng ngay trước khi làm, kể cả khi kế hoạch đã được duyệt.
 - **Thay đổi thiết lập hệ thống** (phím tắt, gsettings, file cấu hình): ghi rõ giá trị cũ trong báo cáo để có thể trả lại.
 - Không cài thêm thứ gì ngoài danh sách. Thấy thiếu thứ gì đáng cài thì đề xuất, không tự cài.
 
-## Cách đọc `packages.md`
-
-Mỗi nhóm là một bảng:
+## Cách đọc bảng Phần B trong `packages.md`
 
 | Cột | Ý nghĩa |
 |---|---|
@@ -35,11 +40,16 @@ Mỗi nhóm là một bảng:
 | Kiểm tra | Lệnh trả exit 0 khi đã cài / đã đúng thiết lập. Trong bảng, `\|` là dấu `|` (escape của Markdown): bỏ dấu `\` khi chạy |
 | Yêu cầu | Điều kiện máy (vd "GNOME 50, Wayland", "card NVIDIA"). Máy không khớp thì bỏ qua và ghi lý do |
 | Ghi chú | Cờ `hỏi trước`, việc người dùng tự làm, lưu ý khác |
-| Trạng thái | `cài` (mặc định) / `bỏ` / `đề xuất` (Claude đề xuất, người dùng chưa duyệt: hỏi trước khi cài) |
+| Trạng thái | `cài` (mặc định) / `bỏ` / `đề xuất` (người dùng chưa duyệt: hỏi trước khi cài) |
+
+Bỏ qua khối "Mẫu" và mục có trạng thái `bỏ`.
+
+## Thêm mục mới
+
+- Chỉ cần một lệnh cài, không hỏi gì, không cần tài khoản, chạy lại an toàn: thêm vào `install-basic.sh` (Phần A) và một dòng vào bảng Phần A. Giữ đúng mẫu: kiểm tra trước, `--check` thì chỉ ghi `CHƯA CÓ`, kết quả qua hàm `note`. Chạy `bash -n` và `--check` sau khi sửa.
+- Còn lại: thêm dòng vào bảng Phần B.
 
 ## Lưu ý
 
-- Repo này **public**: không ghi mật khẩu, token, license key, IP nội bộ, tên máy hay đường dẫn cá nhân vào `packages.md`.
-- Khi người dùng thêm/sửa mục, giữ đúng định dạng bảng để lần sau đọc được.
-- Thêm cách cài mới (vd mục cần nhiều bước) thì ghi các bước vào cột "Cài" hoặc thêm một mục con dưới bảng, không viết script riêng trừ khi người dùng yêu cầu.
-- Tài liệu: [docs/ubuntu-setup/](../docs/ubuntu-setup/overview.md).
+- Repo này **public**: không ghi mật khẩu, token, license key, IP nội bộ, tên máy hay đường dẫn cá nhân vào bất kỳ file nào ở đây.
+- Tài liệu kỹ thuật: [docs/ubuntu-setup/](../docs/ubuntu-setup/overview.md).

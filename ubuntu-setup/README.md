@@ -1,51 +1,41 @@
 # Ubuntu Setup — cài máy Ubuntu mới
 
-Chỉ cần làm tay 2 bước: cài Claude và mở repo này trong Claude. Mọi thứ còn lại (danh sách ở [packages.md](packages.md)) Claude tự cài theo hướng dẫn trong [CLAUDE.md](CLAUDE.md).
+Cài đủ công cụ quen dùng khi chuyển sang Ubuntu: phím tắt kiểu Windows, gõ tiếng Việt, Chrome, Remote Shield + Remote Desktop, OnlyOffice, Remmina, RustDesk, Notepad Next, DBeaver. Danh sách đầy đủ: [packages.md](packages.md).
 
-Yêu cầu: Ubuntu 22.04 trở lên (hoặc Debian 12+), máy x86_64 hoặc arm64, có mạng, tài khoản Claude trả phí (Pro / Max / Team / Enterprise) để dùng Claude Code.
+Chưa cài Claude: làm theo [README gốc](../README.md) trước.
 
-## Bước 1. Cài Claude (dán vào terminal)
+## Dành cho Claude
 
-Mở Terminal (Ctrl+Alt+T), dán cả khối dưới rồi Enter. Lệnh sẽ hỏi mật khẩu của bạn (mật khẩu đăng nhập Ubuntu, gõ không hiện ký tự là bình thường).
+Người dùng gửi link trang này cho bạn để tiếp tục cài máy. Làm như sau:
 
-```bash
-sudo apt update && sudo apt install -y curl gnupg git && \
-sudo curl -fsSLo /usr/share/keyrings/claude-desktop-archive-keyring.asc https://downloads.claude.ai/claude-desktop/key.asc && \
-gpg --show-keys --with-colons /usr/share/keyrings/claude-desktop-archive-keyring.asc | grep -q '^fpr:::::::::31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE:' && \
-echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/claude-desktop-archive-keyring.asc] https://downloads.claude.ai/claude-desktop/apt/stable stable main" | sudo tee /etc/apt/sources.list.d/claude-desktop.list && \
-sudo apt update && sudo apt install -y claude-desktop && \
-{ [ -d ~/ubuntu-assistant ] || git clone https://github.com/pushsale/ubuntu-assistant.git ~/ubuntu-assistant; } && \
-echo "=== XONG: đã cài Claude và tải repo về ~/ubuntu-assistant ===" || echo "=== LỖI: xem dòng báo lỗi phía trên ==="
+1. Repo cần có ở `~/ubuntu-assistant`: chưa có thì `git clone https://github.com/pushsale/ubuntu-assistant.git ~/ubuntu-assistant`, có rồi thì `git -C ~/ubuntu-assistant pull --ff-only`.
+2. Đọc `~/ubuntu-assistant/ubuntu-setup/CLAUDE.md` và làm đúng quy trình trong đó.
+
+## Dành cho người dùng
+
+Cách nhanh nhất: trong Claude (tab **Code**, thư mục `~/ubuntu-assistant`), gõ:
+
+```text
+Đọc ubuntu-setup/CLAUDE.md và cài đặt máy theo hướng dẫn trong đó
 ```
 
-Khối lệnh làm lần lượt (dừng ngay nếu một bước lỗi):
+Claude sẽ:
 
-1. Cài `curl`, `gnupg`, `git`.
-2. Tải khoá ký của Anthropic và kiểm tra đúng dấu vân tay `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE` (khoá sai thì dừng, không thêm kho).
-3. Thêm kho apt chính thức của Claude Desktop; sau này Claude được cập nhật cùng `sudo apt upgrade`.
-4. Cài `claude-desktop`.
-5. Tải repo này về `~/ubuntu-assistant` (đã có thì bỏ qua).
+1. Chạy [install-basic.sh](install-basic.sh) trong terminal: cài một lượt mọi thứ đơn giản. Bạn chỉ nhập **mật khẩu đăng nhập Ubuntu một lần** (gõ không hiện ký tự là bình thường).
+2. Đưa danh sách các mục còn lại cần quyết định (driver NVIDIA, Remote Shield, Remote Login, LibreOffice) để bạn duyệt, rồi làm từng mục. Tài khoản RDP, đăng nhập Google, mật khẩu RustDesk... bạn tự nhập.
+3. Báo cáo kết quả và những việc bạn cần tự làm (thường là đăng xuất rồi đăng nhập lại).
 
-Nguồn lệnh: [hướng dẫn chính thức Claude Desktop on Linux](https://code.claude.com/docs/en/desktop-linux).
-
-**Tuỳ chọn: Claude Code bản dòng lệnh** (dùng `claude` trong terminal, không cần nếu đã dùng app):
+Tự chạy phần cài đơn giản không cần Claude:
 
 ```bash
-curl -fsSL https://claude.ai/install.sh | bash
+cd ~/ubuntu-assistant/ubuntu-setup && ./install-basic.sh
 ```
 
-## Bước 2. Mở repo trong Claude và giao việc
-
-1. Mở **Claude** từ menu ứng dụng (hoặc gõ `claude-desktop`), đăng nhập tài khoản.
-2. Chuyển sang tab **Code**, chọn thư mục `~/ubuntu-assistant` làm thư mục làm việc.
-3. Gõ:
-
-   ```text
-   Đọc ubuntu-setup/CLAUDE.md và cài đặt máy theo danh sách trong ubuntu-setup/packages.md
-   ```
-
-Claude sẽ kiểm tra máy, lập danh sách những gì sẽ cài để bạn duyệt, rồi cài từng mục. Khi cần mật khẩu sudo, Claude mở lệnh trong terminal để bạn tự nhập; tài khoản, license, mật khẩu ứng dụng bạn cũng tự nhập.
+Chỉ kiểm tra máy đã có gì, không cài gì: `./install-basic.sh --check`. Script chạy lại bao nhiêu lần cũng được, mục đã có thì bỏ qua. Log: `~/.cache/ubuntu-setup/install-basic.log`.
 
 ## Sửa danh sách cần cài
 
-Thêm / bớt mục trong [packages.md](packages.md) (giữ đúng định dạng bảng), hoặc nói với Claude "thêm X vào ubuntu-setup". Không ghi mật khẩu, token, license key hay thông tin cá nhân vào đó (repo public).
+- Thứ chỉ cần một lệnh cài, không hỏi gì: thêm vào `install-basic.sh` và bảng Phần A của [packages.md](packages.md).
+- Thứ cần hỏi, cần tài khoản, tuỳ máy: thêm dòng vào Phần B của [packages.md](packages.md).
+
+Hoặc nói với Claude "thêm X vào ubuntu-setup". Không ghi mật khẩu, token, license key hay thông tin cá nhân vào đó (repo public).
