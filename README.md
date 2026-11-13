@@ -7,6 +7,8 @@ Hai GNOME Shell extension cho Ubuntu (GNOME 50, Wayland):
 
 Hai phần độc lập, cài phần nào cũng được.
 
+Chuyển sang máy Ubuntu mới: xem [ubuntu-setup/](ubuntu-setup/README.md). Chỉ cần dán một khối lệnh cài Claude, sau đó Claude tự cài các công cụ trong danh sách (gõ tiếng Việt, Remote Shield, OnlyOffice...).
+
 > **In English.** Two GNOME Shell extensions for Ubuntu (GNOME 50, Wayland). *Remote Shield* makes GNOME's built-in RDP behave like Windows Remote Desktop: while someone is connected, the physical screen shows a lock-screen look-alike and local keyboard/mouse are blocked; any local key press or click ends the remote session and shows the password prompt. *System HUD* draws a system monitor on the desktop background. Install with `./install.sh` in each folder (see below). Documentation is in Vietnamese.
 
 ---
