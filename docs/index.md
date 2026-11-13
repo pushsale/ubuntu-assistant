@@ -30,4 +30,5 @@ Feature chưa có tài liệu: `scifi-hud/` (extension HUD hiển thị CPU/RAM/
 
 ## Liên hệ
 
-Chủ dự án: luannt (máy `luannt-pc`). Mọi thay đổi do Claude Code thực hiện theo yêu cầu trực tiếp của chủ dự án.
+- Chủ dự án: luannt (máy `luannt-pc`). Mọi thay đổi do Claude Code thực hiện theo yêu cầu trực tiếp của chủ dự án.
+- Repo: `github.com/pushsale/ubuntu-assistant` (private, nhánh `main`). Thư mục gốc repo là `Ubuntu Assistant/`.
