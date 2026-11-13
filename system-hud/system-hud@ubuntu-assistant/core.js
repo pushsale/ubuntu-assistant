@@ -20,8 +20,8 @@ const DEFAULTS = {
     widthFraction: 0.25,  // tỉ lệ chiều rộng so với màn hình được chọn
     gap: 12,              // khoảng cách tới mép / dock / top bar
     intervalMs: 3000,     // chu kỳ lấy mẫu số liệu
-    animMs: 900,          // thời gian hiệu ứng chuyển số liệu (0 = tắt hiệu ứng)
-    fps: 30,              // số khung hình/giây trong lúc chạy hiệu ứng
+    animMs: 3000,         // thời gian hiệu ứng chuyển số liệu (0 = tắt hiệu ứng); bằng intervalMs = chuyển liên tục
+    fps: 15,              // số khung hình/giây trong lúc chạy hiệu ứng (30 tốn CPU hơn ~40%, nóng máy)
 };
 
 function loadConfig(dir) {

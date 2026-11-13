@@ -8,7 +8,7 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
 |---|---|
 | Muốn nhìn tình trạng máy mà không phải mở System Monitor hay terminal | Bảng số liệu luôn hiện trên desktop, cập nhật 3 giây/lần |
 | Widget thường nổi trên cửa sổ, che việc đang làm | Vẽ vào lớp hình nền của GNOME: cửa sổ luôn che lên HUD, không bấm nhầm được |
-| Số liệu nhảy giật mỗi lần cập nhật nhìn rối mắt | Hiệu ứng chuyển mượt 0,9 giây giữa hai lần đo, đồ thị trượt dần |
+| Số liệu nhảy giật mỗi lần cập nhật nhìn rối mắt | Hiệu ứng chuyển mượt suốt 3 giây giữa hai lần đo, đồ thị trượt dần |
 | Máy có 2 màn hình, dock, top bar | Chọn màn hình, mép trái/phải, độ rộng; tự né dock trái và top bar |
 | Muốn đổi kiểu dáng, vị trí mà không phải đăng nhập lại | Sửa `config.json` là HUD đổi ngay; cập nhật code chỉ cần chạy `install.sh` |
 | Theo dõi GPU NVIDIA (tải, nhiệt độ, VRAM, công suất, quạt) | Đọc liên tục từ `nvidia-smi`; card AMD thì đọc từ hệ thống |
@@ -19,7 +19,7 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
   Nguồn số liệu                          System HUD (chạy trong gnome-shell)
   ─────────────                          ───────────────────────────────────
   /proc (CPU, RAM, disk, net, uptime) ─┐
-  /sys/class/hwmon (nhiệt độ)          ├─► Sensors ──(3 s/lần)──► Animator ──(30 khung/s khi chuyển)──► drawHud
+  /sys/class/hwmon (nhiệt độ)          ├─► Sensors ──(3 s/lần)──► Animator ──(15 khung/s, liên tục)───► drawHud
   nvidia-smi (GPU, luồng 1 s/lần)      │    gom số liệu,            nội suy mượt                   vẽ theo theme
   ip addr (địa chỉ IP)               ──┘    lịch sử 60 mẫu                                       (Cairo + Pango)
                                                                                                       │
@@ -74,7 +74,7 @@ System HUD vẽ một bảng theo dõi máy (CPU, RAM, GPU, ổ đĩa, mạng, n
 ## Đặc điểm nổi bật
 
 - Không bao giờ che cửa sổ, không nhận chuột (vẽ trong lớp hình nền).
-- Nhẹ: lấy mẫu 3 giây/lần; chỉ vẽ 30 khung/giây trong 0,9 giây chuyển số liệu rồi dừng; nền khung được vẽ sẵn một lần.
+- Nhẹ: lấy mẫu 3 giây/lần; vẽ 15 khung/giây (muốn nhẹ hơn: `animMs` 900 thì chỉ vẽ trong 0,9 giây rồi dừng); nền khung được vẽ sẵn một lần.
 - Không cần quyền root, không cần thư viện ngoài.
 - Bố cục tự co giãn theo chiều cao màn hình (thiết kế chuẩn rộng 480 px).
 

@@ -127,8 +127,8 @@ File `~/.local/share/gnome-shell/extensions/system-hud@ubuntu-assistant/config.j
 | `widthFraction` | 0.25 | 0.25 | Tỉ lệ chiều rộng màn hình; chiều cao luôn bằng work area trừ `gap` |
 | `gap` | 12 | 12 | Khoảng cách tới mép, top bar, dock |
 | `intervalMs` | 3000 | 3000 | Chu kỳ đo (tối thiểu 500). Giảm thì tốn CPU hơn và đồ thị 60 mẫu phủ ít thời gian hơn |
-| `animMs` | 900 | 3000 (thử từ 2026-11-13: chuyển liên tục suốt chu kỳ, CPU gnome-shell tăng khoảng 16% một nhân) | Thời gian hiệu ứng; `0` = tắt hiệu ứng (vẽ 1 lần mỗi mẫu) |
-| `fps` | 30 | 15 (từ 2026-11-13: với hiệu ứng liên tục, 30 fps tốn khoảng 43% một nhân và làm CPU giữ xung turbo, nóng ~72°C; 15 fps khoảng 31%, ~63°C; người dùng thấy đủ mượt) | Số khung/giây khi đang chạy hiệu ứng |
+| `animMs` | 3000 (trước 2026-11-13: 900) | 3000 (chuyển liên tục suốt chu kỳ đo) | Thời gian hiệu ứng; `0` = tắt hiệu ứng (vẽ 1 lần mỗi mẫu) |
+| `fps` | 15 (trước 2026-11-13: 30) | 15 (từ 2026-11-13: với hiệu ứng liên tục, 30 fps tốn khoảng 43% một nhân và làm CPU giữ xung turbo, nóng ~72°C; 15 fps khoảng 31%, ~63°C; người dùng thấy đủ mượt) | Số khung/giây khi đang chạy hiệu ứng |
 
 Thiết lập ngoài cũng ảnh hưởng tới HUD:
 - **Màn chính** (`~/.config/monitors.xml`): quyết định `primary`/`secondary`.
